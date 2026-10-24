@@ -9,7 +9,7 @@ import { COMMUNITY_PAGE_SIZE, POST_KIND_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
 import { Pager } from "./pager";
-import { chipClass, CommunityHeader, EmptyState, PostRow } from "./ui";
+import { CommunityHeader, EmptyState, kindChipClass, PostRow } from "./ui";
 
 type Row = Pick<Post, "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "status" | "created_at"> & {
   comments: { count: number }[];
@@ -120,7 +120,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
 
         <div className="flex flex-wrap items-center gap-1 border-b px-3 py-2 sm:px-4">
           {FILTERS.map((f) => (
-            <Link key={f.value} href={href({ kind: f.value })} className={chipClass(kind === f.value)}>
+            <Link key={f.value} href={href({ kind: f.value })} className={kindChipClass(f.value, kind === f.value)}>
               {f.label}
             </Link>
           ))}

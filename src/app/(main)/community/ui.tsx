@@ -42,6 +42,26 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
   );
 }
 
+// 말머리별 색: 학교 공지=빨강, 질문=파랑, 자유=노랑. (색 이름은 globals.css 의 kind-* 에 있다)
+// Tailwind 가 클래스를 찾을 수 있게 이름을 통째로 적어 둔다.
+const KIND_STYLE = {
+  notice: {
+    soft: "bg-kind-notice-soft text-kind-notice",
+    bar: "border-l-kind-notice-bar",
+    ring: "ring-kind-notice-bar",
+  },
+  question: {
+    soft: "bg-kind-question-soft text-kind-question",
+    bar: "border-l-kind-question-bar",
+    ring: "ring-kind-question-bar",
+  },
+  free: {
+    soft: "bg-kind-free-soft text-kind-free",
+    bar: "border-l-kind-free-bar",
+    ring: "ring-kind-free-bar",
+  },
+} as const;
+
 // 말머리 필터·탭에 쓰는 알약 모양 링크의 클래스. 선택된 것은 연한 강조 바탕.
 export function chipClass(active: boolean) {
   return cn(
@@ -50,8 +70,23 @@ export function chipClass(active: boolean) {
   );
 }
 
+// 말머리 필터 알약. 말머리마다 색이 있고, 지금 고른 것은 같은 색 테두리 고리와 굵은 글씨로 표시한다.
+// kind 가 빈 문자열이면 "전체" 알약(색 없음).
+export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
+  if (!kind) return chipClass(active);
+  return cn(
+    "flex min-h-9 items-center rounded-full px-3.5 text-sm font-medium transition-[box-shadow,filter] hover:brightness-95",
+    KIND_STYLE[kind].soft,
+    active && cn("font-bold ring-2", KIND_STYLE[kind].ring),
+  );
+}
+
 export function KindBadge({ kind }: { kind: Post["kind"] }) {
-  return <Badge variant={kind === "notice" ? "default" : "secondary"}>{POST_KIND_LABEL[kind]}</Badge>;
+  return (
+    <Badge variant="outline" className={cn("border-transparent", KIND_STYLE[kind].soft)}>
+      {POST_KIND_LABEL[kind]}
+    </Badge>
+  );
 }
 
 export function StatusBadge({ status }: { status: ContentStatus }) {
@@ -80,10 +115,14 @@ export function PostRow({ post }: { post: RowPost }) {
   return (
     <Link
       href={`/community/${post.id}`}
-      className={cn("group flex min-w-0 items-start gap-3 p-4 transition-colors hover:bg-accent/40 sm:px-5", post.pinned && "bg-accent/40")}
+      className={cn(
+        "group flex min-w-0 items-start gap-3 border-l-4 p-4 transition-colors hover:bg-accent/40 sm:px-5",
+        KIND_STYLE[post.kind].bar,
+        post.pinned && "bg-accent/40",
+      )}
     >
       <span
-        className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-primary"
+        className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg", KIND_STYLE[post.kind].soft)}
         aria-hidden="true"
       >
         {post.pinned ? <Pin className="size-4" /> : <MessageSquare className="size-4" />}

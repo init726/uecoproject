@@ -160,3 +160,17 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* 커뮤니티 말머리 색: 학교 공지=빨강, 질문=파랑, 자유=노랑.
+   *-soft 는 연한 바탕, 이름만 붙은 것은 그 위의 글자색, *-bar 는 왼쪽 띠·테두리 강조색이다. */
+@theme inline {
+  --color-kind-notice: #b42318;
+  --color-kind-notice-soft: #fde8e6;
+  --color-kind-notice-bar: #dc2626;
+  --color-kind-question: #1e40af;
+  --color-kind-question-soft: #dbe8ff;
+  --color-kind-question-bar: #2563eb;
+  --color-kind-free: #854d0e;
+  --color-kind-free-soft: #fef3c7;
+  --color-kind-free-bar: #eab308;
+}
