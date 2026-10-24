@@ -17,7 +17,7 @@ import { AuthorLine, CommunityHeader, EmptyState, KindBadge, StatusBadge } from 
 
 export default async function PostPage(props: PageProps<"/community/[postId]">) {
   const { postId } = await props.params;
-  const { error, masked } = await props.searchParams;
+  const { error } = await props.searchParams;
   const profile = await getProfile();
   const supabase = await createClient();
 
@@ -60,11 +60,6 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
       {typeof error === "string" && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {masked === "1" && (
-        <Alert>
-          <AlertDescription>부적절한 표현이 있어 *로 바꿔서 올렸습니다.</AlertDescription>
         </Alert>
       )}
       {!published && (
