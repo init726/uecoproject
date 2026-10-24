@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { type Credentials, deleteAccount, issueAccount, resetPassword } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
-import { SERVICE_NAME } from "@/lib/constants";
+import { SCHOOL_NAME } from "@/lib/constants";
 import { normalizePhone, sendSms } from "@/lib/sms";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -91,7 +91,7 @@ export async function issueStudentBatch(rows: BulkRow[], sendText: boolean): Pro
         r.smsReason = rows[i].phone ? "번호 형식 오류" : "번호 없음";
         return [];
       }
-      return [{ index: i, to: phone, text: `[${SERVICE_NAME}] ${r.name}님\n아이디: ${r.username}\n임시비번: ${r.password}\n첫 로그인 후 변경하세요` }];
+      return [{ index: i, to: phone, text: `[${SCHOOL_NAME}] ${r.name}님\n아이디: ${r.username}\n임시비번: ${r.password}\n첫 로그인 후 변경하세요` }];
     });
     const sent = await sendSms(targets.map(({ to, text }) => ({ to, text })));
     targets.forEach((t, k) => {

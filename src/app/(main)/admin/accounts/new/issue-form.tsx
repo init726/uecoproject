@@ -6,7 +6,7 @@ import { FormMessage } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ROLE_LABEL, SERVICE_NAME } from "@/lib/constants";
+import { ROLE_LABEL, SCHOOL_NAME } from "@/lib/constants";
 import type { Role } from "@/lib/types";
 import { USERNAME_RULE } from "@/lib/username";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ function IssueFormInner({ onReset }: { onReset: () => void }) {
 
   if (state.credentials) {
     const c = state.credentials;
-    const text = `[${SERVICE_NAME}] ${ROLE_LABEL[c.role]} 계정\n아이디: ${c.username}\n임시 비밀번호: ${c.password}\n첫 로그인 때 새 비밀번호를 정해야 해요.`;
+    const text = `[${SCHOOL_NAME}] ${ROLE_LABEL[c.role]} 계정\n아이디: ${c.username}\n임시 비밀번호: ${c.password}\n첫 로그인 때 새 비밀번호를 정해야 해요.`;
     return (
       <div className="flex flex-col gap-4 rounded-lg border border-primary/40 bg-primary/5 p-4">
         <p className="font-medium">

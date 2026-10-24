@@ -8,17 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SERVICE_NAME } from "@/lib/constants";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, {});
 
   return (
-    <Card className="rounded-3xl py-9 [--card-spacing:--spacing(8)]">
+    <Card className="py-7 [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <p className="eyebrow">{SERVICE_NAME}에 오신 것을 환영합니다</p>
-        <CardTitle className="text-3xl font-black tracking-tight text-school-navy">로그인</CardTitle>
-        <CardDescription className="mt-2 text-sm">학교에서 발급받은 아이디로 시작하세요.</CardDescription>
+        <p className="eyebrow">학교생활 통합 포털에 오신 것을 환영합니다</p>
+        <CardTitle className="text-2xl font-semibold text-school-navy">로그인</CardTitle>
+        <CardDescription className="mt-2 text-xs">학교에서 발급받은 아이디로 시작하세요.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="flex flex-col gap-4">
