@@ -4,24 +4,33 @@
 
 ## 1. 색: 이름으로만 쓴다
 
-색 코드(`#1d4ed8`, `bg-blue-600` 등)를 직접 쓰지 않는다. 아래 이름을 쓰면 나중에 색을 바꿔도 전체가 같이 바뀐다.
+색 코드(`#0b0f14`, `bg-blue-600` 등)를 직접 쓰지 않는다. 아래 이름을 쓰면 나중에 색을 바꿔도 전체가 같이 바뀌고, **라이트·다크 모드가 자동으로 따라온다.**
+값은 [src/app/globals.css](../src/app/globals.css) 의 `:root`(라이트)와 `.dark`(다크)에 있다.
 
-| 쓰임 | 클래스 | 색 |
-| --- | --- | --- |
-| 주 색: 버튼, 링크, 강조 글자, 위쪽 바 | `bg-primary` `text-primary` | 코발트 `#1d4ed8` |
-| 주 색 위의 글자 | `text-primary-foreground` | 흰색 |
-| 페이지·패널 제목 | `text-school-navy` | 남색 `#1b2b45` |
-| 본문 글자 | `text-foreground` (기본값) | `#1f2f3a` |
-| 보조 글자 (날짜, 설명) | `text-muted-foreground` | `#5f6e7c` |
-| 화면 바탕 | `bg-background` (기본값) | `#f4f6f8` |
-| 카드·패널 바탕 | `bg-card` | 흰색 |
-| 연한 강조 바탕 (선택됨, 마우스 올림) | `bg-accent` `text-accent-foreground` | `#e9effd` / 코발트 |
-| 연한 회색 바탕 | `bg-muted` | `#eef2f5` |
-| 테두리 | `border` (색은 자동) | `#dce3e9` |
-| 삭제·오류 | `text-destructive`, `<Button variant="destructive">` | 빨강 |
-| 작은 포인트 선·점 | `bg-school-gold` | 연한 코발트 `#6f8fd8` |
+| 쓰임 | 클래스 | 라이트 | 다크 |
+| --- | --- | --- | --- |
+| 주 색: 버튼, 링크, 강조 글자 | `bg-primary` `text-primary` | 검정 `#0b0f14` | 파랑 `#7db4ff` |
+| 주 색 위의 글자 | `text-primary-foreground` | 흰색 | 검정 |
+| 페이지·패널 제목 | `text-school-navy` | 검정 | 밝은 회백색 |
+| 본문 글자 | `text-foreground` (기본값) | 검정 | 밝은 회백색 |
+| 보조 글자 (날짜, 설명) | `text-muted-foreground` | `#5a6169` | `#98a2ad` |
+| 화면 바탕 | `bg-background` (기본값) | 오프화이트 `#f5f5f1` | 거의 검정 `#0b0f14` |
+| 카드·패널 바탕 | `bg-card` | 흰색 | `#141a21` |
+| 강조 바탕 (선택됨, 지금 보는 메뉴) | `bg-accent` `text-accent-foreground` | 형광 파랑 `#7db4ff` | 어두운 남색 + 파랑 글자 |
+| 연한 회색 바탕 (입력칸 등) | `bg-muted` | `#eeeee8` | `#1a2129` |
+| 테두리 | `border` (색은 자동) | `#e1e1da` | `#252e38` |
+| 삭제·오류 | `text-destructive`, `<Button variant="destructive">` | 빨강 | 밝은 빨강 |
+| 작은 포인트 선·점 | `bg-school-gold` |하늘색 | 파랑 | 연두 |
 
-경고(주황, `amber-*`)는 "시간 겹침" 같은 경고 상자에만 쓴다.
+- **글자가 "검정 위에하늘색 | 파랑"인 곳**(예: 로그인 화면의 연한 하늘색 하이라이트)처럼 모드와 상관없이 같은 색이어야 하는 곳만 `bg-school-gold text-black` 을 쓴다.
+- 경고(주황, `amber-*`)는 "시간 겹침" 같은 경고 상자에만 쓴다. 시간표 칸의 파스텔 색(`timetable.tsx`)은 아직 라이트 전용 고정 색이다.
+- 커뮤니티 말머리 색(`bg-kind-notice-soft` 등 9개)도 같은 방식으로 라이트·다크 값이 따로 있다.
+
+### 라이트·다크 모드
+
+- **기본은 라이트.** OS 설정(다크)은 따르지 않고, 사용자가 위쪽 바의 해·달 버튼(`<ThemeToggle />`)으로 바꾼다. 고른 모드는 쿠키 `theme` 에 1년 저장되고 서버가 처음부터 그 모드로 그려서 깜빡이지 않는다.
+- 모드는 `<html class="dark">` 로 정해진다. 새 화면에서는 `dark:` 를 따로 쓸 일이 거의 없다. 위 이름(토큰)만 쓰면 된다.
+- 새로 색이 필요하면 `globals.css` 의 `:root` 와 `.dark` **양쪽에** 변수를 추가하고 `@theme inline` 에 이름을 붙인다.
 
 ## 2. 공통 모양 클래스
 
@@ -81,11 +90,11 @@ export default async function CommunityPage() {
 - 교사: `teacher-shell.tsx`의 사이드바에 `<NavLink href="/community" className={ITEM}>`, 휴대폰 아래 탭에도 같은 링크
 - 관리자: `admin-shell.tsx`의 `NAV` 배열에 한 줄
 
-지금 보는 메뉴 표시(흰 알약, 연한 파란 바탕)는 `NavLink`가 알아서 해 준다.
+지금 보는 메뉴 표시(파랑 알약)는 `NavLink`가 알아서 해 준다.
 
 ## 6. 하지 말 것
 
 - 색 코드 직접 쓰기, 새 색 추가하기 (필요하면 팀장과 상의해서 `globals.css`에 이름을 붙여 추가)
-- 그림자(`shadow-lg` 등), 그라데이션 — 지금 디자인은 테두리로 구분하는 평평한 스타일이다
+- 그림자(`shadow-lg` 등), 그라데이션 — 지금 디자인은 테두리와 큰 둥근 모서리로 구분하는 평평한 스타일이다
 - 글자 크기 마음대로 정하기 — 제목은 `page-title`, `school-panel-title`, 본문은 `text-sm`, 보조는 `text-xs`
 - 흐린 글자를 더 흐리게 만들기 (`text-muted-foreground/50` 등) — 글자가 안 읽힌다

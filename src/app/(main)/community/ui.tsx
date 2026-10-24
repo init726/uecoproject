@@ -47,18 +47,18 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
 const KIND_STYLE = {
   notice: {
     soft: "border-kind-notice-bar/30 bg-kind-notice-soft text-kind-notice",
+    dot: "before:bg-kind-notice-bar",
     bar: "border-l-kind-notice-bar",
-    ring: "ring-kind-notice-bar",
   },
   question: {
     soft: "border-kind-question-bar/30 bg-kind-question-soft text-kind-question",
+    dot: "before:bg-kind-question-bar",
     bar: "border-l-kind-question-bar",
-    ring: "ring-kind-question-bar",
   },
   free: {
     soft: "border-kind-free-bar/30 bg-kind-free-soft text-kind-free",
+    dot: "before:bg-kind-free-bar",
     bar: "border-l-kind-free-bar",
-    ring: "ring-kind-free-bar",
   },
 } as const;
 
@@ -66,18 +66,21 @@ const KIND_STYLE = {
 export function chipClass(active: boolean) {
   return cn(
     "flex min-h-9 items-center rounded-full px-3.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-    active && "bg-accent font-semibold text-primary hover:bg-accent hover:text-primary",
+    active && "font-bold text-foreground ring-1 ring-foreground",
   );
 }
 
-// 말머리 필터 알약. 말머리마다 색이 있고, 지금 고른 것은 같은 색 테두리 고리와 굵은 글씨로 표시한다.
-// kind 가 빈 문자열이면 "전체" 알약(색 없음).
+// 말머리 필터 알약. 늘 흰 바탕에 말머리 색 점만 둔다. 선택해도 칸을 색으로 채우지 않고,
+// 글씨를 굵게 하고 테두리를 짙게(글자색과 같게) 해서 표시한다.
+// kind 가 빈 문자열이면 "전체" 알약: 점이 없다.
 export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
-  if (!kind) return chipClass(active);
   return cn(
-    "flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-[box-shadow,filter] hover:brightness-95",
-    KIND_STYLE[kind].soft,
-    active && cn("font-bold ring-2", KIND_STYLE[kind].ring),
+    "flex min-h-9 items-center gap-2 rounded-full border bg-card px-3.5 text-sm font-medium transition-colors",
+    active
+      ? "border-foreground font-bold text-foreground ring-1 ring-foreground"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    // 색 점: 흐린 바탕에서도 보이도록 얇은 테두리를 두른다.
+    kind && ["before:size-2 before:rounded-full before:ring-1 before:ring-foreground/15 before:content-['']", KIND_STYLE[kind].dot],
   );
 }
 
