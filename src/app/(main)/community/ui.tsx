@@ -47,18 +47,21 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
 const KIND_STYLE = {
   notice: {
     soft: "border-kind-notice-bar/30 bg-kind-notice-soft text-kind-notice",
+    dot: "before:bg-kind-notice-bar",
+    activeBorder: "border-kind-notice-bar",
     bar: "border-l-kind-notice-bar",
-    ring: "ring-kind-notice-bar",
   },
   question: {
     soft: "border-kind-question-bar/30 bg-kind-question-soft text-kind-question",
+    dot: "before:bg-kind-question-bar",
+    activeBorder: "border-kind-question-bar",
     bar: "border-l-kind-question-bar",
-    ring: "ring-kind-question-bar",
   },
   free: {
     soft: "border-kind-free-bar/30 bg-kind-free-soft text-kind-free",
+    dot: "before:bg-kind-free-bar",
+    activeBorder: "border-kind-free-bar",
     bar: "border-l-kind-free-bar",
-    ring: "ring-kind-free-bar",
   },
 } as const;
 
@@ -70,14 +73,29 @@ export function chipClass(active: boolean) {
   );
 }
 
-// 말머리 필터 알약. 말머리마다 색이 있고, 지금 고른 것은 같은 색 테두리 고리와 굵은 글씨로 표시한다.
-// kind 가 빈 문자열이면 "전체" 알약(색 없음).
+// 말머리 필터 알약. 평소에는 흰 바탕에 말머리 색 점만 두고, 지금 고른 것은 그 말머리 색으로 가득 채운다.
+// (검정·연두처럼 채워진 색이 늘 보이면 어느 것이 선택됐는지 헷갈리기 때문이다)
+// kind 가 빈 문자열이면 "전체" 알약: 평소 점 없음, 선택되면 주색(라이트=검정, 다크=연두)으로 채운다.
 export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
-  if (!kind) return chipClass(active);
+  const base =
+    "flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors";
+  if (!kind) {
+    return cn(
+      base,
+      active
+        ? "border-primary bg-primary font-bold text-primary-foreground"
+        : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+    );
+  }
   return cn(
-    "flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-[box-shadow,filter] hover:brightness-95",
-    KIND_STYLE[kind].soft,
-    active && cn("font-bold ring-2", KIND_STYLE[kind].ring),
+    base,
+    active
+      ? cn("font-bold", KIND_STYLE[kind].soft, KIND_STYLE[kind].activeBorder)
+      : cn(
+          "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+          "before:size-2 before:rounded-full before:content-['']",
+          KIND_STYLE[kind].dot,
+        ),
   );
 }
 

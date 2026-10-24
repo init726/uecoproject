@@ -30,7 +30,7 @@ function IssueFormInner({ onReset }: { onReset: () => void }) {
 
   if (state.credentials) {
     const c = state.credentials;
-    const text = `[우리학교] ${ROLE_LABEL[c.role]} 계정\n아이디: ${c.username}\n임시 비밀번호: ${c.password}\n첫 로그인 때 새 비밀번호를 정해야 해요.`;
+    const text = `[Cue] ${ROLE_LABEL[c.role]} 계정\n아이디: ${c.username}\n임시 비밀번호: ${c.password}\n첫 로그인 때 새 비밀번호를 정해야 해요.`;
     return (
       <div className="flex flex-col gap-4 rounded-lg border border-primary/40 bg-primary/5 p-4">
         <p className="font-medium">

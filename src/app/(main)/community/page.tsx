@@ -187,7 +187,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
                 aria-current={sort === s.value ? "true" : undefined}
                 className={cn(
                   "flex min-h-8 items-center rounded-md px-2.5 text-muted-foreground hover:bg-muted hover:text-foreground",
-                  sort === s.value && "bg-accent font-semibold text-primary hover:bg-accent hover:text-primary",
+                  sort === s.value && "bg-muted font-bold text-foreground",
                 )}
               >
                 {s.label}

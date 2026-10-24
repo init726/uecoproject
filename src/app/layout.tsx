@@ -13,7 +13,7 @@ const notoKr = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "우리학교",
+  title: "Cue",
   description: "고교학점제 시간표, 과제 제출, 공지를 한곳에서",
 };
 

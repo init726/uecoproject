@@ -13,6 +13,7 @@
   --font-sans: var(--font-noto-kr), "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
+  --font-logo: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive; /* 로고(Cue) 전용: 컴퓨터에 설치된 Comic Sans */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -103,16 +104,17 @@
   --sidebar-accent-foreground: #0b0f14;
   --sidebar-border: #e1e1da;
   --sidebar-ring: #7bb61a;
-  /* 말머리: 벽돌빨강 / 강청색 / 차분한 금색 */
-  --kind-notice: #9b2c2c;
-  --kind-notice-soft: #fbeceb;
-  --kind-notice-bar: #c0504a;
-  --kind-question: #1f4f8f;
-  --kind-question-soft: #e8eff9;
-  --kind-question-bar: #4f7fc4;
-  --kind-free: #7a5a0f;
-  --kind-free-soft: #fbf3dc;
-  --kind-free-bar: #b9891a;
+  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=형광 연두, 질문=검정, 자유=회색.
+     soft=바탕, 이름만 붙은 것=그 위의 글자색, bar=왼쪽 띠·선택 고리 색 */
+  --kind-notice: #0b0f14;
+  --kind-notice-soft: #c4f26d;
+  --kind-notice-bar: #6ba50f;
+  --kind-question: #f5f5f1;
+  --kind-question-soft: #0b0f14;
+  --kind-question-bar: #0b0f14;
+  --kind-free: #3d444b;
+  --kind-free-soft: #e6e6df;
+  --kind-free-bar: #8a9082;
 }
 
 .dark {
@@ -150,15 +152,15 @@
   --sidebar-accent-foreground: #c4f26d;
   --sidebar-border: #252e38;
   --sidebar-ring: #c4f26d;
-  --kind-notice: #f3a8a2;
-  --kind-notice-soft: #3a1f1e;
-  --kind-notice-bar: #d9645c;
-  --kind-question: #a9c6f0;
-  --kind-question-soft: #1b2a40;
-  --kind-question-bar: #6e9ae0;
-  --kind-free: #ebcb70;
-  --kind-free-soft: #382f14;
-  --kind-free-bar: #d1a02c;
+  --kind-notice: #0b0f14;
+  --kind-notice-soft: #c4f26d;
+  --kind-notice-bar: #c4f26d;
+  --kind-question: #0b0f14;
+  --kind-question-soft: #f1f1ec;
+  --kind-question-bar: #f1f1ec;
+  --kind-free: #c9d0d8;
+  --kind-free-soft: #252e38;
+  --kind-free-bar: #56626f;
 }
 
 /* 역할은 명칭으로 구분하고 기본 색과 조작 방식은 일관되게 유지한다. */
