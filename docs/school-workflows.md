@@ -63,4 +63,4 @@ npm run build
 
 ## 한 학교의 표시 이름
 
-신정고등학교 한 곳만 운영하는 서비스다. 학교 이름(신정고등학교)과 서비스 이름(마이 신정)은 설정 없이 `src/lib/constants.ts`의 `SCHOOL_NAME`, `SERVICE_NAME`에 고정되어 있다.
+신정고등학교 한 곳만 운영하는 서비스다. 학교 이름(신정고등학교)과 서비스 이름(Cue)은 설정 없이 `src/lib/constants.ts`의 `SCHOOL_NAME`, `SERVICE_NAME`에 고정되어 있다.
