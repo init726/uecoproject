@@ -14,7 +14,7 @@ export const getUnreadCount = cache(async () => {
 });
 
 // 메뉴의 "커뮤니티" 옆에 붙는 새 알림 수 배지 (Suspense 안에서 쓴다)
-// 지금 보는 메뉴(연두 알약) 위에서도 보이도록 주색(라이트=검정, 다크=연두)을 쓴다.
+// 지금 보는 메뉴(파랑 알약) 위에서도 보이도록 주색(라이트=검정, 다크=파랑)을 쓴다.
 export async function CommunityBadge({ className }: { className?: string }) {
   const count = await getUnreadCount();
   if (!count) return null;

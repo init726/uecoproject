@@ -9,7 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-school-navy: var(--school-navy); /* 제목용 진한 글자색 (라이트=검정, 다크=밝은 회백색) */
-  --color-school-gold: var(--school-gold); /* 작은 포인트 선·점 (형광 연두) */
+  --color-school-gold: var(--school-gold); /* 작은 포인트 선·점 (연한 하늘색) */
   --font-sans: var(--font-noto-kr), "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
@@ -65,8 +65,8 @@
 /* ---------------------------------------------------------------------
    색 팔레트. 기본은 라이트 모드이고, <html class="dark"> 이면 다크 모드다.
    컴포넌트는 색 코드 대신 이름(bg-primary, text-muted-foreground …)만 쓰므로 여기만 바꾸면 전체가 바뀐다.
-   라이트: 따뜻한 오프화이트 바탕 + 검정 주색 + 형광 연두 강조
-   다크  : 거의 검정 바탕 + 연두 주색
+   라이트: 따뜻한 오프화이트 바탕 + 검정 주색 + 연한 하늘색 강조
+   다크  : 거의 검정 바탕 + 파랑 주색
    --------------------------------------------------------------------- */
 :root {
   color-scheme: light;
@@ -82,12 +82,12 @@
   --secondary-foreground: #0b0f14;
   --muted: #eeeee8;
   --muted-foreground: #5a6169;
-  --accent: #c4f26d; /* 선택됨·강조 바탕: 형광 연두 */
+  --accent: #bcd9ff; /* 선택됨·강조 바탕: 연한 하늘색 */
   --accent-foreground: #0b0f14;
   --destructive: #d92d20;
   --border: #e1e1da;
   --input: #2a3038; /* 입력칸 테두리: 또렷한 짙은 선 */
-  --ring: #0b0f14; /* 입력칸을 눌렀을 때의 테두리: 검정 (진한 연두는 쓰지 않는다) */
+  --ring: #0b0f14; /* 입력칸을 눌렀을 때의 테두리: 검정 (진한 색은 쓰지 않는다) */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -95,20 +95,20 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 1rem;
   --school-navy: #0b0f14;
-  --school-gold: #c4f26d;
+  --school-gold: #bcd9ff;
   --sidebar: #ffffff;
   --sidebar-foreground: #0b0f14;
   --sidebar-primary: #0b0f14;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #c4f26d;
+  --sidebar-accent: #bcd9ff;
   --sidebar-accent-foreground: #0b0f14;
   --sidebar-border: #e1e1da;
   --sidebar-ring: #0b0f14;
-  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=형광 연두, 질문=검정, 자유=회색.
+  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 질문=검정, 자유=회색.
      soft=바탕, 이름만 붙은 것=그 위의 글자색, bar=왼쪽 띠·선택 고리 색 */
   --kind-notice: #0b0f14;
-  --kind-notice-soft: #c4f26d;
-  --kind-notice-bar: #c4f26d;
+  --kind-notice-soft: #bcd9ff;
+  --kind-notice-bar: #bcd9ff;
   --kind-question: #f5f5f1;
   --kind-question-soft: #0b0f14;
   --kind-question-bar: #0b0f14;
@@ -125,36 +125,36 @@
   --card-foreground: #f1f1ec;
   --popover: #141a21;
   --popover-foreground: #f1f1ec;
-  --primary: #c4f26d; /* 다크에서는 연두가 주색 */
+  --primary: #7db4ff; /* 다크에서는 파랑이 주색 */
   --primary-foreground: #0b0f14;
   --secondary: #1d252e;
   --secondary-foreground: #f1f1ec;
   --muted: #1a2129;
   --muted-foreground: #98a2ad;
-  --accent: #232f17; /* 선택됨 바탕: 어두운 올리브 */
-  --accent-foreground: #c4f26d;
+  --accent: #172a45; /* 선택됨 바탕: 어두운 남색 */
+  --accent-foreground: #7db4ff;
   --destructive: #f4695e;
   --border: #252e38;
   --input: #3b4551;
-  --ring: #c4f26d;
+  --ring: #7db4ff;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --school-navy: #f1f1ec;
-  --school-gold: #c4f26d;
+  --school-gold: #7db4ff;
   --sidebar: #0f141a;
   --sidebar-foreground: #f1f1ec;
-  --sidebar-primary: #c4f26d;
+  --sidebar-primary: #7db4ff;
   --sidebar-primary-foreground: #0b0f14;
-  --sidebar-accent: #232f17;
-  --sidebar-accent-foreground: #c4f26d;
+  --sidebar-accent: #172a45;
+  --sidebar-accent-foreground: #7db4ff;
   --sidebar-border: #252e38;
-  --sidebar-ring: #c4f26d;
+  --sidebar-ring: #7db4ff;
   --kind-notice: #0b0f14;
-  --kind-notice-soft: #c4f26d;
-  --kind-notice-bar: #c4f26d;
+  --kind-notice-soft: #7db4ff;
+  --kind-notice-bar: #7db4ff;
   --kind-question: #0b0f14;
   --kind-question-soft: #f1f1ec;
   --kind-question-bar: #f1f1ec;
@@ -194,7 +194,7 @@
   .school-bottom-nav { @apply fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-card pb-[env(safe-area-inset-bottom)]; }
   .school-bottom-link { @apply relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground data-active:font-bold data-active:text-foreground; }
   .school-bottom-link[data-active]::before { content: ""; @apply absolute top-0 h-1 w-9 rounded-full bg-school-gold; }
-  /* 위쪽 바: 화면 바탕과 같은 색 + 얇은 아래 선. 지금 보는 메뉴는 연두 알약으로 표시한다. */
+  /* 위쪽 바: 화면 바탕과 같은 색 + 얇은 아래 선. 지금 보는 메뉴는 파랑 알약으로 표시한다. */
   .school-topbar { @apply sticky top-0 z-30 border-b bg-background/90 text-foreground backdrop-blur; }
   .school-top-link { @apply flex h-10 shrink-0 items-center rounded-full px-4 text-[15px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-active:bg-accent data-active:font-bold data-active:text-accent-foreground; }
   .skip-link { @apply fixed top-2 left-4 z-50 -translate-y-20 rounded-lg bg-foreground px-4 py-3 text-sm text-background focus:translate-y-0; }

@@ -2,7 +2,7 @@ import { BookOpen, CalendarDays, Megaphone } from "lucide-react";
 import { SchoolBrand } from "@/components/school-brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-// 강조할 낱말 위에 형광 연두 띠를 두른다. (라이트·다크 모두 같은 연두 + 검정 글자)
+// 강조할 낱말 위에 연한 하늘색 띠를 두른다. (라이트·다크 모두 같은 파랑 + 검정 글자)
 function Mark({ children }: { children: React.ReactNode }) {
   // inline-block + 줄 높이 고정: 띠 하나가 자기 줄 안에서만 차지하므로 위아래 줄의 띠와 겹치지 않는다.
   return <mark className="inline-block rounded-2xl bg-school-gold px-3 text-black">{children}</mark>;
