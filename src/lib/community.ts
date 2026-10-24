@@ -11,6 +11,12 @@ export function isPostKind(value: unknown): value is PostKind {
   return typeof value === "string" && value in POST_KIND_LABEL;
 }
 
+// 검색어를 ilike 조건에 안전하게 넣을 수 있게 다듬는다.
+// PostgREST의 or() 문법을 깨는 문자(, ( ) " \)와 와일드카드(% _ *)는 공백으로 바꾼다.
+export function sanitizeSearch(raw: string) {
+  return raw.replace(/[,()"'\\%_*]/g, " ").replace(/\s+/g, " ").trim().slice(0, 50);
+}
+
 // 이 사람이 쓸 수 있는 말머리. 학교 공지는 관리자만, 관리자는 공지만.
 // (데이터베이스 트리거가 같은 규칙을 한 번 더 강제한다)
 export function writableKinds(profile: Profile): PostKind[] {
