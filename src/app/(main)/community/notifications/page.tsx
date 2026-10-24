@@ -54,11 +54,11 @@ export default async function NotificationsPage(props: PageProps<"/community/not
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
 
-  await getProfile();
   const supabase = await createClient();
 
-  // RLS: 내 알림만 보인다.
-  const [{ data, count }, { count: unread }] = await Promise.all([
+  // RLS: 내 알림만 보인다. 로그인 확인도 조회와 동시에 한다.
+  const [, { data, count }, { count: unread }] = await Promise.all([
+    getProfile(),
     supabase
       .from("notifications")
       .select("id, kind, target_type, actor_name, excerpt, created_at, read_at", { count: "exact" })

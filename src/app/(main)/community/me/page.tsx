@@ -1,7 +1,7 @@
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getProfile } from "@/lib/auth";
+import { getAuthUser, getProfile } from "@/lib/auth";
 import { COMMUNITY_PAGE_SIZE } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -32,14 +32,16 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
   const to = from + COMMUNITY_PAGE_SIZE - 1;
 
-  const profile = await getProfile();
   const supabase = await createClient();
+  // 내 아이디는 로그인 토큰에서 바로 꺼낸다(네트워크 왕복 없음). 로그인·권한 확인은 아래 조회와 동시에 한다.
+  const me = await getAuthUser();
+  const myId = me?.id ?? "";
 
   // RLS가 삭제된 글·댓글과 숨겨진 글에 달린 댓글을 걸러낸다. 그래서 '검토 중'인 내 글은 보이지만
   // 삭제한 글은 나오지 않는다. 관리자는 RLS상 전부 보이므로 상태로 한 번 더 거른다.
-  const mine =
+  const minePromise =
     tab === "bookmarks"
-      ? await supabase
+      ? supabase
           .from("bookmarks")
           .select(
             "created_at, post:posts!inner(id, kind, title, pinned, status, created_at, accepted_comment_id, comment_count, author_name, author_role)",
@@ -49,22 +51,24 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
           .range(from, to)
           .overrideTypes<MyBookmark[], { merge: false }>()
       : tab === "posts"
-      ? await supabase
+      ? supabase
           .from("posts")
           .select("id, kind, title, pinned, status, created_at, accepted_comment_id, comment_count", { count: "exact" })
-          .eq("author_id", profile.id)
+          .eq("author_id", myId)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })
           .range(from, to)
           .overrideTypes<MyPost[], { merge: false }>()
-      : await supabase
+      : supabase
           .from("comments")
           .select("id, post_id, body, status, created_at, post:posts!comments_post_id_fkey(title)", { count: "exact" })
-          .eq("author_id", profile.id)
+          .eq("author_id", myId)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })
           .range(from, to)
           .overrideTypes<MyComment[], { merge: false }>();
+
+  const [, mine] = await Promise.all([getProfile(), minePromise]);
 
   const rows = mine.data ?? [];
   const totalPages = Math.max(1, Math.ceil((mine.count ?? 0) / COMMUNITY_PAGE_SIZE));

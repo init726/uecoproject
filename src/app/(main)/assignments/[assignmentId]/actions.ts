@@ -1,5 +1,6 @@
 "use server";
 
+import { getAuthUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -21,9 +22,7 @@ export async function submitText(
   if (!content.trim()) return { error: "내용을 입력해 주세요." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(); // 로그인 토큰을 서버에서 바로 검증한다 (Supabase 왕복 없음)
   if (!user) redirect("/login");
 
   const { error } = await supabase
@@ -43,9 +42,7 @@ export async function recordFileSubmission(
   fileName: string,
 ): Promise<ActionState> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(); // 로그인 토큰을 서버에서 바로 검증한다 (Supabase 왕복 없음)
   if (!user) redirect("/login");
 
   const { error } = await supabase.from("submissions").insert({

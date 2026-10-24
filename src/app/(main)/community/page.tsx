@@ -51,7 +51,6 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   const sort: Sort = SORTS.find((s) => s.value === searchParams.sort)?.value ?? "latest";
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
 
-  const profile = await getProfile();
   const supabase = await createClient();
 
   // 게시 중인 글만. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
@@ -71,10 +70,15 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   // 댓글 수·마지막 활동 시각은 DB 트리거가 글에 맞춰 둔 값이다. 같은 값이면 최신 글이 먼저.
   if (sort === "comments") query = query.order("comment_count", { ascending: false });
   if (sort === "active") query = query.order("last_activity_at", { ascending: false });
-  const { data, count } = await query
-    .order("created_at", { ascending: false })
-    .range(from, from + COMMUNITY_PAGE_SIZE - 1)
-    .overrideTypes<Row[], { merge: false }>();
+  // 내 정보·글 목록·안 읽은 알림 수는 서로 상관없으므로 한꺼번에 보낸다.
+  const [profile, { data, count }, unread] = await Promise.all([
+    getProfile(),
+    query
+      .order("created_at", { ascending: false })
+      .range(from, from + COMMUNITY_PAGE_SIZE - 1)
+      .overrideTypes<Row[], { merge: false }>(),
+    getUnreadCount(),
+  ]);
 
   const posts = data ?? [];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / COMMUNITY_PAGE_SIZE));
@@ -94,7 +98,6 @@ export default async function CommunityPage(props: PageProps<"/community">) {
     return text ? `/community?${text}` : "/community";
   };
   const canWrite = writableKinds(profile).length > 0;
-  const unread = await getUnreadCount();
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,5 +1,6 @@
 "use server";
 
+import { getAuthUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { changeUsername } from "@/lib/accounts";
@@ -33,9 +34,7 @@ export async function changeMyUsername(_prev: ActionState, formData: FormData): 
   if (!hasAdminKey()) return { error: "지금은 아이디를 바꿀 수 없어요. 관리자에게 문의해 주세요." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(); // 로그인 토큰을 서버에서 바로 검증한다 (Supabase 왕복 없음)
   if (!user) redirect("/login");
 
   const result = await changeUsername(user.id, username);

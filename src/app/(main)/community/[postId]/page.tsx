@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getProfile } from "@/lib/auth";
+import { getAuthUser, getProfile } from "@/lib/auth";
 import { CONTENT_STATUS_LABEL, POST_KIND_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { Comment, Post } from "@/lib/types";
@@ -22,11 +22,13 @@ const isEdited = (a: string, b: string) => new Date(a).getTime() - new Date(b).g
 export default async function PostPage(props: PageProps<"/community/[postId]">) {
   const { postId } = await props.params;
   const { error } = await props.searchParams;
-  const profile = await getProfile();
   const supabase = await createClient();
+  // 내 아이디는 로그인 토큰에서 바로 꺼낸다(네트워크 왕복 없음). 그래서 내 정보 조회도 아래 조회들과 동시에 보낼 수 있다.
+  const me = await getAuthUser();
 
   // RLS가 숨겨진 글·삭제된 글을 걸러낸다. 주소를 직접 쳐도 일반 사용자에게는 null이다.
-  const [{ data: post }, { data: commentRows }, { data: myReports }, { data: myBookmark }] = await Promise.all([
+  const [profile, { data: post }, { data: commentRows }, { data: myReports }, { data: myBookmark }] = await Promise.all([
+    getProfile(),
     supabase.from("posts").select("*").eq("id", postId).maybeSingle<Post>(),
     supabase
       .from("comments")
@@ -35,7 +37,7 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
       .order("created_at")
       .overrideTypes<Comment[], { merge: false }>(),
     // 내가 이미 신고한 대상 (RLS: 내 신고만 보인다)
-    supabase.from("reports").select("post_id, comment_id").eq("reporter_id", profile.id),
+    supabase.from("reports").select("post_id, comment_id").eq("reporter_id", me?.id ?? ""),
     // 내가 이 글을 스크랩했는지 (RLS: 내 스크랩만 보인다)
     supabase.from("bookmarks").select("post_id").eq("post_id", postId).maybeSingle(),
   ]);

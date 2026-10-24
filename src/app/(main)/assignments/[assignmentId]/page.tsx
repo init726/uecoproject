@@ -50,11 +50,15 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
   if (!assignment?.class) notFound();
   const submissions = submissionRows ?? [];
 
-  const { data: feedbackRows, error: feedbackError } = submissions.length ? await supabase.from("submission_feedback").select("submission_id, body, updated_at").in("submission_id", submissions.map(s=>s.id)) : {data:[],error:null};
+  // 피드백과 AI 초안 기록은 서로 상관없으므로 동시에 받는다.
+  const empty = { data: [], error: null };
+  const [{ data: feedbackRows, error: feedbackError }, { data: aiLogs, error: aiError }] = await Promise.all([
+    submissions.length ? supabase.from("submission_feedback").select("submission_id, body, updated_at").in("submission_id", submissions.map(s=>s.id)) : Promise.resolve(empty),
+    purposeReady && assignment.purpose==="self_review" ? supabase.from("ai_draft_logs").select("student_id,created_at").eq("assignment_id",assignmentId) : Promise.resolve(empty),
+  ]);
   const feedbackReady=!isMissingSchema(feedbackError,["submission_feedback"]);
   if (feedbackError && feedbackReady) throw new Error("피드백을 불러오지 못했습니다. DB 업데이트를 확인해 주세요.");
   const feedback = Object.fromEntries((feedbackRows ?? []).map(f=>[f.submission_id,f]));
-  const {data:aiLogs,error:aiError}=purposeReady && assignment.purpose==="self_review"?await supabase.from("ai_draft_logs").select("student_id,created_at").eq("assignment_id",assignmentId):{data:[],error:null};
   if(aiError && !isMissingSchema(aiError,["ai_draft_logs"]))throw new Error("AI 초안 요청 기록을 불러오지 못했습니다.");
   const aiCounts:Record<string,number>={};for(const log of aiLogs??[])aiCounts[log.student_id]=(aiCounts[log.student_id]??0)+1;
   const isTeacher = assignment.class.teacher_id === profile.id;

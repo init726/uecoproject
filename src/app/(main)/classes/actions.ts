@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "@/lib/types";
-import { requireRole } from "@/lib/auth";
+import { getAuthUser, requireRole } from "@/lib/auth";
 
 export type ClassFormState = ActionState & { conflicts?: string[] };
 
@@ -71,9 +71,7 @@ export async function joinClass(_prev: JoinState, formData: FormData): Promise<J
 // 학생이 클래스에서 나가기
 export async function leaveClass(classId: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(); // 로그인 토큰을 서버에서 바로 검증한다 (Supabase 왕복 없음)
   if (!user) redirect("/login");
 
   await supabase.from("enrollments").delete().eq("class_id", classId).eq("student_id", user.id);

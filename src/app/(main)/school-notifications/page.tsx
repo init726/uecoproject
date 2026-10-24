@@ -1,18 +1,21 @@
 import Link from "next/link";
-import { getProfile } from "@/lib/auth";
+import { getAuthUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/format";
 import { isMissingSchema } from "@/lib/schema-compat";
 import { ReadForm } from "./read-form";
 
 export default async function Notifications() {
-  const profile = await getProfile();
   const client = await createClient();
-  const { data, error } = await client.from("learning_notifications")
-    .select("id,title,href,read_at,created_at")
-    .eq("user_id", profile.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const me = await getAuthUser(); // 로그인 토큰에서 바로 꺼낸다 (네트워크 왕복 없음)
+  const [, { data, error }] = await Promise.all([
+    getProfile(),
+    client.from("learning_notifications")
+      .select("id,title,href,read_at,created_at")
+      .eq("user_id", me?.id ?? "")
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
   const unavailable = isMissingSchema(error, ["learning_notifications"]);
 
   return (

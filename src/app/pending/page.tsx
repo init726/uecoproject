@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/(auth)/actions";
 import { SubmitButton } from "@/components/submit-button";
@@ -7,9 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 // 승인 대기 중인 교사가 보는 화면 (getProfile을 쓰면 이 페이지로 다시 보내져 무한 반복되므로 직접 확인)
 export default async function PendingPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(); // 로그인 토큰을 서버에서 바로 검증한다 (Supabase 왕복 없음)
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
