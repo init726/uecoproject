@@ -48,19 +48,16 @@ const KIND_STYLE = {
   notice: {
     soft: "border-kind-notice-bar/30 bg-kind-notice-soft text-kind-notice",
     dot: "before:bg-kind-notice-bar",
-    activeBorder: "border-kind-notice-bar",
     bar: "border-l-kind-notice-bar",
   },
   question: {
     soft: "border-kind-question-bar/30 bg-kind-question-soft text-kind-question",
     dot: "before:bg-kind-question-bar",
-    activeBorder: "border-kind-question-bar",
     bar: "border-l-kind-question-bar",
   },
   free: {
     soft: "border-kind-free-bar/30 bg-kind-free-soft text-kind-free",
     dot: "before:bg-kind-free-bar",
-    activeBorder: "border-kind-free-bar",
     bar: "border-l-kind-free-bar",
   },
 } as const;
@@ -73,29 +70,17 @@ export function chipClass(active: boolean) {
   );
 }
 
-// 말머리 필터 알약. 평소에는 흰 바탕에 말머리 색 점만 두고, 지금 고른 것은 그 말머리 색으로 가득 채운다.
-// (검정·연두처럼 채워진 색이 늘 보이면 어느 것이 선택됐는지 헷갈리기 때문이다)
-// kind 가 빈 문자열이면 "전체" 알약: 평소 점 없음, 선택되면 주색(라이트=검정, 다크=연두)으로 채운다.
+// 말머리 필터 알약. 늘 흰 바탕에 말머리 색 점만 둔다. 선택해도 칸을 색으로 채우지 않고,
+// 글씨를 굵게 하고 테두리를 짙게(글자색과 같게) 해서 표시한다.
+// kind 가 빈 문자열이면 "전체" 알약: 점이 없다.
 export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
-  const base =
-    "flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors";
-  if (!kind) {
-    return cn(
-      base,
-      active
-        ? "border-primary bg-primary font-bold text-primary-foreground"
-        : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
-    );
-  }
   return cn(
-    base,
+    "flex min-h-9 items-center gap-2 rounded-full border bg-card px-3.5 text-sm font-medium transition-colors",
     active
-      ? cn("font-bold", KIND_STYLE[kind].soft, KIND_STYLE[kind].activeBorder)
-      : cn(
-          "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
-          "before:size-2 before:rounded-full before:content-['']",
-          KIND_STYLE[kind].dot,
-        ),
+      ? "border-foreground font-bold text-foreground ring-1 ring-foreground"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    // 색 점: 흐린 바탕에서도 보이도록 얇은 테두리를 두른다.
+    kind && ["before:size-2 before:rounded-full before:ring-1 before:ring-foreground/15 before:content-['']", KIND_STYLE[kind].dot],
   );
 }
 
