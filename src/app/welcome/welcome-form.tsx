@@ -18,7 +18,6 @@ export function WelcomeForm({ currentId }: { currentId: string }) {
         <Input
           id="username"
           name="username"
-          placeholder={currentId}
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}

@@ -77,9 +77,10 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           <Input
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
-            placeholder={`"${CONFIRM_WORD}" 입력`}
+            aria-label={`삭제 확인: ${CONFIRM_WORD} 입력`}
             className="h-8 w-28"
           />
+          <span className="text-xs">확인란에 ‘{CONFIRM_WORD}’ 입력</span>
           <Button
             variant="destructive"
             size="sm"

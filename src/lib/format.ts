@@ -25,6 +25,11 @@ export function isPast(iso: string) {
   return new Date(iso).getTime() < Date.now();
 }
 
+export function isDueSoon(iso: string) {
+  const remaining = new Date(iso).getTime() - Date.now();
+  return remaining >= 0 && remaining <= 24 * 60 * 60 * 1000;
+}
+
 // 오늘이 한국 시간으로 무슨 요일인지 (1=월 ~ 5=금, 주말은 null)
 export function kstWeekday(): number | null {
   const name = new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, weekday: "short" }).format(

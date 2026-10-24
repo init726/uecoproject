@@ -89,13 +89,13 @@ function IssueFormInner({ onReset }: { onReset: () => void }) {
         {role === "student" && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="student_no">학번</Label>
-            <Input id="student_no" name="student_no" inputMode="numeric" pattern="\d{5}" placeholder="20315" required />
+            <Input id="student_no" name="student_no" inputMode="numeric" pattern="\d{5}" required />
           </div>
         )}
         {role === "teacher" && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="subject">담당 교과</Label>
-            <Input id="subject" name="subject" placeholder="수학" required />
+            <Input id="subject" name="subject" required />
           </div>
         )}
       </div>
@@ -104,7 +104,6 @@ function IssueFormInner({ onReset }: { onReset: () => void }) {
         <Input
           id="username"
           name="username"
-          placeholder={role === "student" ? "202620315" : "kimteacher"}
           autoCapitalize="none"
           spellCheck={false}
           pattern="[A-Za-z0-9_]{4,20}"

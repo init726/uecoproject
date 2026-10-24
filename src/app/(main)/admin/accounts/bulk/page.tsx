@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { smsReady } from "@/lib/sms";
 import { hasAdminKey } from "@/lib/supabase/admin";
 import { BulkIssueForm } from "./bulk-issue-form";
+import Link from "next/link";
 
 // 학생 단체 발급: 엑셀 명단을 붙여넣어 한 번에 계정을 만든다. (새 학년 시작할 때)
 export default async function BulkIssuePage() {
@@ -18,6 +19,7 @@ export default async function BulkIssuePage() {
           학생은 첫 로그인 때 비밀번호를 바꾸고, 원하면 아이디도 바꿀 수 있어요.
         </p>
       </div>
+      <Link href="/admin/import" className="surface p-4 text-sm text-primary hover:underline">학생·교사 계정과 개인 시간표를 엑셀 파일로 함께 등록하기 →</Link>
       {hasAdminKey() ? <BulkIssueForm defaultYear={year} smsReady={smsReady()} /> : <MissingKey />}
     </div>
   );

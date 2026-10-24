@@ -18,6 +18,7 @@ export type IssueInput = {
   username: string;
   studentNo?: string;
   subject?: string;
+  importKey?: string;
 };
 
 export type Credentials = { username: string; password: string };
@@ -27,7 +28,7 @@ function describeCreateError(code: string | undefined) {
   return "계정을 만들지 못했어요.";
 }
 
-export async function issueAccount(input: IssueInput): Promise<Credentials | { error: string }> {
+export async function issueAccount(input: IssueInput): Promise<(Credentials & { userId: string }) | { error: string }> {
   const admin = createAdminClient();
   const password = generatePassword();
 
@@ -36,7 +37,7 @@ export async function issueAccount(input: IssueInput): Promise<Credentials | { e
     email: toAuthEmail(input.username),
     password,
     email_confirm: true,
-    app_metadata: MUST_CHANGE,
+    app_metadata: { ...MUST_CHANGE, ...(input.importKey ? { school_import_key: input.importKey } : {}) },
     user_metadata: {
       name: input.name,
       role: input.role === "student" ? "student" : "teacher",
@@ -56,7 +57,7 @@ export async function issueAccount(input: IssueInput): Promise<Credentials | { e
     return { error: "계정 정보를 저장하지 못했어요." };
   }
 
-  return { username: input.username, password };
+  return { username: input.username, password, userId: data.user.id };
 }
 
 // 교사 회원가입: 비밀번호는 본인이 정하고, 관리자 승인 전(approved=false) 상태로 만든다.

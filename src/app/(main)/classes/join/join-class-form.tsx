@@ -44,7 +44,6 @@ export function JoinClassForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <Input
         name="code"
-        placeholder="예: K7M2QX"
         maxLength={6}
         autoComplete="off"
         autoCapitalize="characters"

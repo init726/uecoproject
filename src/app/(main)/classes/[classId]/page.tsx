@@ -50,7 +50,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
       getProfile(),
       supabase
         .from("classes")
-        .select("id, teacher_id, name, semester, room, invite_code, class_slots(day, period), teacher:profiles!classes_teacher_id_fkey(name)")
+        .select("id, teacher_id, name, semester, room, invite_code, import_key, class_slots(day, period), teacher:profiles!classes_teacher_id_fkey(name)")
         .eq("id", classId)
         .maybeSingle<ClassDetail>(),
       supabase
@@ -97,7 +97,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-xl font-bold">{klass.name}</h2>
+        <p className="eyebrow">클래스</p><h2 className="page-title">{klass.name}</h2>
         <p className="text-sm text-muted-foreground">
           {[
             klass.semester,
@@ -111,6 +111,9 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
       </div>
 
       {isTeacher && (
+        <p className="text-sm text-muted-foreground">{klass.import_key ? "학교 배정 수업입니다. 수강생과 시간표가 엑셀 등록 자료에서 연결됐습니다." : "초대코드로 학생을 등록할 수 있습니다."}</p>
+      )}
+      {isTeacher && (
         <Card size="sm">
           <CardContent className="flex flex-wrap items-center gap-3">
             <div>
@@ -122,7 +125,10 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
                 재발급
               </SubmitButton>
             </form>
-            <div className="ml-auto flex gap-2">
+            <div className="ml-auto flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link href={`/classes/${classId}/edit`}>클래스 수정</Link>
+              </Button>
               <Button asChild variant="outline">
                 <Link href={`/classes/${classId}/notices/new`}>공지 쓰기</Link>
               </Button>
@@ -135,7 +141,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
       )}
 
       <Tabs defaultValue={defaultTab}>
-        <TabsList>
+        <TabsList className="h-11 w-full justify-start border-b bg-transparent p-0 sm:w-auto">
           <TabsTrigger value="assignments">과제 {assignments.length}</TabsTrigger>
           <TabsTrigger value="notices">공지 {notices.length}</TabsTrigger>
           {isTeacher && <TabsTrigger value="students">학생 {members.length}</TabsTrigger>}

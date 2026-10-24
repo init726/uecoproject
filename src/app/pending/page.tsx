@@ -20,7 +20,7 @@ export default async function PendingPage() {
   if (!profile || profile.role !== "teacher" || profile.approved) redirect("/home");
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-muted/40 px-4">
+    <main id="main-content" className="flex flex-1 items-center justify-center bg-muted/40 px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>승인을 기다리고 있어요</CardTitle>

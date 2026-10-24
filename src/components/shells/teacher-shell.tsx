@@ -1,11 +1,11 @@
-import { BookOpen, LayoutDashboard, MessagesSquare, Plus, User } from "lucide-react";
+import { BookOpen, LayoutDashboard, MessageSquare, Plus, User } from "lucide-react";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
+import { SchoolBrand } from "@/components/school-brand";
 
-const ITEM =
-  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground data-active:bg-accent data-active:font-medium data-active:text-accent-foreground";
+const ITEM = "school-nav-item";
 
 // 교사 화면: 왼쪽 사이드바에 내 클래스 목록. 휴대폰에서는 위쪽 가로 메뉴.
 export function TeacherShell({
@@ -18,61 +18,50 @@ export function TeacherShell({
   children: React.ReactNode;
 }) {
   return (
-    <div data-role="teacher" className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          <Link href="/home" className="text-lg font-bold">
-            우리학교
-          </Link>
-          <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-            교사
-          </span>
+    <div data-role="teacher" className="flex min-h-screen bg-background">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-t-[3px] border-t-primary border-r bg-sidebar lg:flex">
+        <div className="flex h-[4.5rem] items-center border-b px-5">
+          <SchoolBrand subtitle="교직원 공간" />
         </div>
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+        <nav aria-label="교사 주 메뉴" className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
           <NavLink href="/home" exact className={ITEM}>
             <LayoutDashboard className="size-4" />
             대시보드
           </NavLink>
           <NavLink href="/community" className={ITEM}>
-            <MessagesSquare className="size-4" />
+            <MessageSquare className="size-4" />
             커뮤니티
           </NavLink>
-          <p className="mt-4 mb-1 px-3 text-xs font-medium text-muted-foreground">내 클래스</p>
+          <p className="mt-6 mb-2 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground">담당 수업</p>
           {classLinks}
           <NavLink href="/classes/new" exact className={ITEM}>
             <Plus className="size-4" />
             클래스 만들기
           </NavLink>
         </nav>
-        <div className="border-t p-3">
+        <div className="border-t p-4">
           <NavLink href="/me" className={ITEM}>
-            <User className="size-4" />
-            <span className="truncate">
-              {profile.name} 선생님 · {profile.subject}
-            </span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-school-navy">{profile.name.slice(0, 1)}</span>
+            <span className="min-w-0"><span className="block truncate font-medium text-foreground">{profile.name} 선생님</span><span className="block text-xs">{profile.subject} · 내 정보</span></span>
           </NavLink>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur md:hidden">
-          <Link href="/home" className="shrink-0 font-bold">
-            우리학교
+        <header className="school-topbar flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:hidden">
+          <SchoolBrand tone="light" subtitle="교직원" />
+          <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
+            <span className="block truncate text-sm font-semibold">{profile.name} 선생님</span>
+            <span className="block text-xs text-white/80">{profile.subject}</span>
           </Link>
-          <NavLink href="/home" exact className={`${ITEM} shrink-0`}>
-            대시보드
-          </NavLink>
-          <NavLink href="/community" className={`${ITEM} shrink-0`}>
-            커뮤니티
-          </NavLink>
-          <NavLink href="/classes/new" exact className={`${ITEM} shrink-0`}>
-            클래스 만들기
-          </NavLink>
-          <NavLink href="/me" className={`${ITEM} shrink-0`}>
-            내 정보
-          </NavLink>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
+        <nav aria-label="모바일 교사 메뉴" className="school-bottom-nav grid-cols-4 lg:hidden">
+          <NavLink href="/home" exact className="school-bottom-link"><LayoutDashboard className="size-5" />홈</NavLink>
+          <NavLink href="/community" className="school-bottom-link"><MessageSquare className="size-5" />커뮤니티</NavLink>
+          <NavLink href="/classes/new" exact className="school-bottom-link"><Plus className="size-5" />클래스 만들기</NavLink>
+          <NavLink href="/me" className="school-bottom-link"><User className="size-5" />내 정보</NavLink>
+        </nav>
       </div>
     </div>
   );
@@ -81,11 +70,11 @@ export function TeacherShell({
 // 사이드바의 내 클래스 목록 (Suspense 안에서 따로 불러온다)
 export async function TeacherClassLinks({ teacherId }: { teacherId: string }) {
   const supabase = await createClient();
-  const { data } = await supabase.from("classes").select("id, name").eq("teacher_id", teacherId).order("name");
+  const { data } = await supabase.from("classes").select("id, name, semester").eq("teacher_id", teacherId).order("semester", { ascending: false }).order("name");
   return (data ?? []).map((c) => (
     <NavLink key={c.id} href={`/classes/${c.id}`} className={ITEM}>
       <BookOpen className="size-4" />
-      <span className="truncate">{c.name}</span>
+      <span className="min-w-0"><span className="block truncate">{c.name}</span><span className="block text-[11px] text-muted-foreground">{c.semester}</span></span>
     </NavLink>
   ));
 }

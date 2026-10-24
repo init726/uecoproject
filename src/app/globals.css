@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* 생성 파일과 개발 로그가 스타일 재컴파일을 유발하지 않도록 src만 탐색한다. */
+@import "tailwindcss" source("../");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -6,9 +7,11 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-school-navy: #1b2b45; /* 제목용 남색 (코발트와 같은 계열) */
+  --color-school-gold: #6f8fd8; /* 포인트 색 (연한 코발트) */
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -49,31 +52,31 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #f4f6f8;
+  --foreground: #1f2f3a;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #1f2f3a;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #1d4ed8; /* 코발트 블루: 위쪽 바·버튼·강조 글자 */
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #edf2f5;
+  --secondary-foreground: #1d4ed8;
+  --muted: #eef2f5;
+  --muted-foreground: #5f6e7c;
+  --accent: #e9effd;
+  --accent-foreground: #1d4ed8;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #dce3e9;
+  --input: #c8d2db;
+  --ring: #7ea0e8;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -117,32 +120,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* 계정 종류별 색. 각 화면 틀(components/shells)의 data-role 속성으로 바뀐다. */
-[data-role="student"] {
-  --primary: oklch(0.55 0.19 258);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.7 0.12 258);
-  --accent: oklch(0.96 0.025 258);
-  --accent-foreground: oklch(0.35 0.12 258);
-}
-
-[data-role="teacher"] {
-  --primary: oklch(0.52 0.12 165);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.7 0.09 165);
-  --accent: oklch(0.96 0.025 165);
-  --accent-foreground: oklch(0.33 0.08 165);
-  --sidebar: oklch(0.98 0.008 165);
-  --sidebar-border: oklch(0.92 0.015 165);
-}
-
-/* 관리자 콘솔은 .dark와 함께 쓴다 */
-[data-role="admin"] {
-  --primary: oklch(0.8 0.15 80);
-  --primary-foreground: oklch(0.2 0.03 80);
-  --ring: oklch(0.65 0.12 80);
-  --sidebar: oklch(0.18 0 0);
-}
+/* 역할은 명칭으로 구분하고 기본 색과 조작 방식은 일관되게 유지한다. */
 
 @layer base {
   * {
@@ -150,8 +128,35 @@
   }
   body {
     @apply bg-background text-foreground;
+    line-height: 1.65;
   }
   html {
     @apply font-sans;
   }
+  h2, h3 { letter-spacing: -0.025em; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  ::selection { background: #dbe6fd; color: #1b2b45; }
+}
+
+@layer components {
+  .surface { @apply rounded-xl border border-border bg-card text-card-foreground; }
+  .page-title { @apply text-2xl font-bold tracking-tight text-school-navy sm:text-[1.75rem]; }
+  .eyebrow { @apply mb-1 text-xs font-semibold tracking-wide text-muted-foreground; }
+  .form-select { @apply h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-base text-card-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 sm:text-sm; }
+  .school-panel { @apply min-w-0 overflow-hidden rounded-xl border border-border bg-card; }
+  .school-panel-heading { @apply flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4 sm:px-5; }
+  .school-panel-title { @apply flex items-center gap-2 text-base font-semibold tracking-tight text-school-navy; }
+  .school-nav-item { @apply flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-active:bg-accent data-active:font-semibold data-active:text-primary; }
+  .school-bottom-nav { @apply fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-card pb-[env(safe-area-inset-bottom)]; }
+  .school-bottom-link { @apply relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground data-active:font-semibold data-active:text-primary; }
+  .school-bottom-link[data-active]::before { content: ""; @apply absolute top-0 h-0.5 w-8 rounded-full bg-primary; }
+  /* 위쪽 바: 코발트 바탕 + 흰 글자 (버튼·강조색과 같은 색). 지금 보는 메뉴는 흰 알약으로 표시한다. */
+  .school-topbar { @apply sticky top-0 z-30 border-b border-black/10 bg-primary text-white; }
+  .school-top-link { @apply flex h-10 shrink-0 items-center rounded-full px-4 text-[15px] font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-white data-active:bg-white data-active:text-primary; }
+  .skip-link { @apply fixed top-2 left-4 z-50 -translate-y-20 rounded-lg bg-school-navy px-4 py-3 text-sm text-white focus:translate-y-0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

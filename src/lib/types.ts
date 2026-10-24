@@ -24,6 +24,7 @@ export type ClassRow = {
   semester: string;
   room: string | null;
   invite_code: string;
+  import_key?: string | null;
 };
 
 export type Notice = {

@@ -46,6 +46,20 @@
 
 ## 명령어
 
+### 기존 DB의 시간표 업데이트 (2026-10-24)
+
+이미 `schema.sql`을 적용한 Supabase 프로젝트에서는 SQL Editor에서
+[`supabase/migrations/20261024_semester_timetable.sql`](supabase/migrations/20261024_semester_timetable.sql)만 한 번 실행한다.
+새 프로젝트에서는 최신 `schema.sql` 전체를 실행하면 된다. 기존 DB에 초기 스키마 전체를 다시 실행하지 않는다.
+
+- 학기는 공통 `semesters` 목록에서 선택한다. 설치 시 한국 시간 기준 올해 전후 2년의 학기를 만든다.
+- `2026-2`, `2026년 2학기` 같은 기존 표기는 `2026-2학기`로 합치고, 인식되지 않는 사용자 정의 학기는 보존한다.
+- 홈의 학기를 바꾸면 수업·시간표·오늘 수업·홈 과제/통계가 함께 바뀐다. 사이드바와 전체 할 일은 다른 학기도 접근할 수 있다.
+- 교사는 클래스 상세 → **클래스 수정**에서 이름·학기·강의실·수업 시간을 변경한다.
+- 같은 학기 본인 수업과 겹치면 경고 후 명시적으로 확인해야 저장한다. 학생 참여는 충돌 경고 후 허용한다.
+- `save_class` RPC가 클래스와 시간표를 한 트랜잭션으로 저장한다. DB 변경 후 `npm run test:db`를 실행한다.
+- 이후 학기 추가는 담당자가 `semesters`에 `id`, `academic_year`, `term`을 추가한다. ID 형식은 `2029-1학기`와 같다.
+
 | 명령어 | 하는 일 |
 | --- | --- |
 | `npm run dev` | 개발 서버 실행 |
@@ -94,6 +108,7 @@ src/
 
 ## 새 기능을 만들 때 규칙
 
+- **화면 디자인은 [docs/design-guide.md](docs/design-guide.md)를 따른다.** 색 코드는 직접 쓰지 않고 `bg-primary` 같은 이름을 쓴다.
 - **권한은 schema.sql의 RLS로 막는다.** 화면에서 버튼을 숨기는 것만으로는 안전하지 않다.
 - `createAdminClient()`(Secret key)는 RLS를 무시한다. 관리자 기능에서만, `requireAdmin()` 다음에만 쓴다.
 - 데이터를 바꾸는 코드는 `actions.ts`(서버 액션)에 쓰고, 폼에서 `useActionState`로 부른다.
