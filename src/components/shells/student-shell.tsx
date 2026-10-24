@@ -1,4 +1,4 @@
-import { House, ListTodo, User } from "lucide-react";
+import { House, ListTodo, MessagesSquare, User } from "lucide-react";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
@@ -6,6 +6,7 @@ import type { Profile } from "@/lib/types";
 const NAV = [
   { href: "/home", label: "홈", icon: House },
   { href: "/todo", label: "할 일", icon: ListTodo },
+  { href: "/community", label: "커뮤니티", icon: MessagesSquare },
   { href: "/me", label: "내 정보", icon: User },
 ];
 
@@ -37,7 +38,7 @@ export function StudentShell({ profile, children }: { profile: Profile; children
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-24 sm:pb-10">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-3 border-t bg-background pb-[env(safe-area-inset-bottom)] sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] sm:hidden">
         {NAV.map(({ href, label, icon: Icon }) => (
           <NavLink
             key={href}

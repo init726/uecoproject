@@ -1,4 +1,14 @@
-import { FileSpreadsheet, LayoutDashboard, Server, User, UserCheck, UserPlus, Users } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Flag,
+  LayoutDashboard,
+  MessagesSquare,
+  Server,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +20,8 @@ const NAV = [
   { href: "/admin/accounts/new", label: "계정 발급", icon: UserPlus },
   { href: "/admin/accounts/bulk", label: "학생 단체 발급", icon: FileSpreadsheet },
   { href: "/admin/users", label: "사용자 관리", icon: Users },
+  { href: "/community", label: "커뮤니티", icon: MessagesSquare },
+  { href: "/admin/community", label: "신고 관리", icon: Flag },
   { href: "/admin/system", label: "시스템", icon: Server },
 ];
 

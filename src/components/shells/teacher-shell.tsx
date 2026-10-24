@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, Plus, User } from "lucide-react";
+import { BookOpen, LayoutDashboard, MessagesSquare, Plus, User } from "lucide-react";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
@@ -33,6 +33,10 @@ export function TeacherShell({
             <LayoutDashboard className="size-4" />
             대시보드
           </NavLink>
+          <NavLink href="/community" className={ITEM}>
+            <MessagesSquare className="size-4" />
+            커뮤니티
+          </NavLink>
           <p className="mt-4 mb-1 px-3 text-xs font-medium text-muted-foreground">내 클래스</p>
           {classLinks}
           <NavLink href="/classes/new" exact className={ITEM}>
@@ -57,6 +61,9 @@ export function TeacherShell({
           </Link>
           <NavLink href="/home" exact className={`${ITEM} shrink-0`}>
             대시보드
+          </NavLink>
+          <NavLink href="/community" className={`${ITEM} shrink-0`}>
+            커뮤니티
           </NavLink>
           <NavLink href="/classes/new" exact className={`${ITEM} shrink-0`}>
             클래스 만들기

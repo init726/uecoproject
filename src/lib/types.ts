@@ -60,3 +60,34 @@ export type Submission = {
 
 // 서버 액션이 폼에 돌려주는 결과
 export type ActionState = { error?: string; message?: string };
+
+// ---- 커뮤니티 (supabase/community.sql) ----
+
+export type PostKind = "notice" | "question" | "free";
+// 게시 중 / 검토 중(숨김) / 삭제됨
+export type ContentStatus = "published" | "review" | "deleted";
+
+export type Post = {
+  id: string;
+  author_id: string;
+  author_name: string;
+  author_role: Role;
+  kind: PostKind;
+  title: string;
+  body: string;
+  pinned: boolean;
+  status: ContentStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Comment = {
+  id: string;
+  post_id: string;
+  author_id: string;
+  author_name: string;
+  author_role: Role;
+  body: string;
+  status: ContentStatus;
+  created_at: string;
+};

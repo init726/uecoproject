@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:db": "node supabase/test-rls.mjs supabase/schema.sql",
+    "test:community": "node supabase/test-community.mjs supabase/schema.sql supabase/community.sql",
     "issue-account": "node --env-file=.env.local scripts/issue-account.mjs"
   },
   "dependencies": {
