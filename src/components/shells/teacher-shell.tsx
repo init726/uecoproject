@@ -1,7 +1,8 @@
-import { BookOpen, LayoutDashboard, Plus, User } from "lucide-react";
-import { Suspense } from "react";
+import { BookOpen, LayoutDashboard, MessageSquare, Plus, User } from "lucide-react";
 import { NotificationLink } from "@/components/notification-link";
 import Link from "next/link";
+import { Suspense } from "react";
+import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
@@ -31,6 +32,13 @@ export function TeacherShell({
             <LayoutDashboard className="size-4" />
             대시보드
           </NavLink>
+          <NavLink href="/community" className={ITEM}>
+            <MessageSquare className="size-4" />
+            커뮤니티
+            <Suspense fallback={null}>
+              <CommunityBadge className="ml-auto" />
+            </Suspense>
+          </NavLink>
           <p className="mt-6 mb-2 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground">담당 수업</p>
           {classLinks}
           <NavLink href="/classes/new" exact className={ITEM}>
@@ -56,8 +64,9 @@ export function TeacherShell({
           </Link>
         </header>
         <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
-        <nav aria-label="모바일 교사 메뉴" className="school-bottom-nav lg:hidden">
+        <nav aria-label="모바일 교사 메뉴" className="school-bottom-nav grid-cols-4 lg:hidden">
           <NavLink href="/home" exact className="school-bottom-link"><LayoutDashboard className="size-5" />홈</NavLink>
+          <NavLink href="/community" className="school-bottom-link"><MessageSquare className="size-5" />커뮤니티<Suspense fallback={null}><CommunityBadge className="absolute top-1.5 left-1/2 ml-2" /></Suspense></NavLink>
           <NavLink href="/classes/new" exact className="school-bottom-link"><Plus className="size-5" />클래스 만들기</NavLink>
           <NavLink href="/me" className="school-bottom-link"><User className="size-5" />내 정보</NavLink>
         </nav>

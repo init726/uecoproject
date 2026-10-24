@@ -14,3 +14,23 @@ export const ROLE_LABEL = {
   teacher: "교사",
   admin: "관리자",
 } as const;
+
+// ---- 커뮤니티 ----
+export const POST_KIND_LABEL = {
+  notice: "학교 공지",
+  question: "질문",
+  free: "자유",
+} as const;
+
+export const CONTENT_STATUS_LABEL = {
+  published: "게시 중",
+  review: "검토 중",
+  deleted: "삭제됨",
+} as const;
+
+export const COMMUNITY_PAGE_SIZE = 15;
+// community.sql 의 길이 제한과 같아야 한다.
+export const POST_TITLE_MAX = 100;
+export const POST_BODY_MAX = 5000;
+export const COMMENT_MAX = 1000;
+export const REASON_MAX = 300;

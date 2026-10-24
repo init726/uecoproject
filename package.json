@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:db": "node supabase/test-rls.mjs supabase/schema.sql",
+    "test:community": "node supabase/test-community.mjs supabase/schema.sql supabase/community.sql supabase/community-v2.sql supabase/community-v3.sql supabase/community-v4.sql",
     "issue-account": "node --env-file=.env.local scripts/issue-account.mjs",
     "test:import": "node --import tsx --test tests/school-import*.test.ts",
     "test:workflows": "node supabase/test-workflows.mjs && node --import tsx --test tests/workflows.test.ts",

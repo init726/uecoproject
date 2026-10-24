@@ -1,7 +1,8 @@
-import { House, ListTodo, User } from "lucide-react";
-import { Suspense } from "react";
+import { House, ListTodo, MessageSquare, User } from "lucide-react";
 import { NotificationLink } from "@/components/notification-link";
 import Link from "next/link";
+import { Suspense } from "react";
+import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
@@ -9,6 +10,7 @@ import { SchoolBrand } from "@/components/school-brand";
 const NAV = [
   { href: "/home", label: "홈", icon: House },
   { href: "/todo", label: "할 일", icon: ListTodo },
+  { href: "/community", label: "커뮤니티", icon: MessageSquare },
   { href: "/me", label: "내 정보", icon: User },
 ];
 
@@ -21,8 +23,13 @@ export function StudentShell({ profile, children }: { profile: Profile; children
           <SchoolBrand tone="light" subtitle="" />
           <nav aria-label="주 메뉴" className="ml-4 hidden items-center gap-1 md:flex">
             {NAV.map(({ href, label }) => (
-              <NavLink key={href} href={href} className="school-top-link">
+              <NavLink key={href} href={href} className="school-top-link gap-2">
                 {label}
+                {href === "/community" && (
+                  <Suspense fallback={null}>
+                    <CommunityBadge tone="onPrimary" />
+                  </Suspense>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -36,7 +43,7 @@ export function StudentShell({ profile, children }: { profile: Profile; children
 
       <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 md:pt-8 md:pb-12 lg:px-8">{children}</main>
 
-      <nav aria-label="모바일 주 메뉴" className="school-bottom-nav md:hidden">
+      <nav aria-label="모바일 주 메뉴" className="school-bottom-nav grid-cols-4 md:hidden">
         {NAV.map(({ href, label, icon: Icon }) => (
           <NavLink
             key={href}
@@ -45,6 +52,11 @@ export function StudentShell({ profile, children }: { profile: Profile; children
           >
             <Icon className="size-5" />
             {label}
+            {href === "/community" && (
+              <Suspense fallback={null}>
+                <CommunityBadge className="absolute top-1.5 left-1/2 ml-2" />
+              </Suspense>
+            )}
           </NavLink>
         ))}
       </nav>
