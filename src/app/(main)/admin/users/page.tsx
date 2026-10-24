@@ -105,7 +105,8 @@ export default async function UsersPage(props: PageProps<"/admin/users">) {
         <form className="ml-auto">
           <input type="hidden" name="role" value={role} />
           {grade && <input type="hidden" name="grade" value={grade} />}
-          <Input name="q" defaultValue={q} placeholder="이름, 아이디, 학번 검색" className="w-56" />
+          <label htmlFor="user-search" className="sr-only">이름, 아이디, 학번 검색</label>
+          <Input id="user-search" name="q" defaultValue={q} className="w-56" />
         </form>
       </div>
 

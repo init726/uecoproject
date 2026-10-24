@@ -12,10 +12,10 @@ export function UsernameForm({ currentId }: { currentId: string }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      <p className="text-sm">현재 아이디 <span className="ml-2 font-semibold">{currentId}</span></p>
       <div className="flex gap-2">
         <Input
           name="username"
-          placeholder={currentId}
           aria-label="새 아이디"
           autoComplete="username"
           autoCapitalize="none"

@@ -59,7 +59,6 @@ export function AssignmentForm({ classId }: { classId: string }) {
           name="rubric"
           rows={4}
           maxLength={5000}
-          placeholder={"예)\n- 주제 이해 (30점)\n- 근거 제시 (40점)\n- 표현과 구성 (30점)"}
         />
         <p className="text-xs text-muted-foreground">
           학생에게 그대로 공개돼요. 기준을 미리 알리면 평가에 대한 오해가 줄어요.

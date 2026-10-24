@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { login } from "@/app/(auth)/actions";
 import { FormMessage } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -13,9 +13,11 @@ export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, {});
 
   return (
-    <Card>
+    <Card className="py-7 [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <CardTitle>로그인</CardTitle>
+        <p className="eyebrow">우리학교에 오신 것을 환영합니다</p>
+        <CardTitle className="text-2xl font-semibold text-school-navy">로그인</CardTitle>
+        <CardDescription className="mt-2 text-xs">학교에서 발급받은 아이디로 시작하세요.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="flex flex-col gap-4">

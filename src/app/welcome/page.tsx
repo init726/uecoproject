@@ -17,7 +17,7 @@ export default async function WelcomePage() {
   const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-10">
+    <main id="main-content" className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-10">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>{profile?.name ?? ""}님, 환영해요</CardTitle>

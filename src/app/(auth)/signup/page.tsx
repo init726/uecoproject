@@ -29,7 +29,7 @@ export default function SignupPage() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="subject">담당 교과</Label>
-              <Input id="subject" name="subject" placeholder="수학" required />
+              <Input id="subject" name="subject" required />
             </div>
           </div>
           <div className="flex flex-col gap-2">

@@ -19,7 +19,6 @@ import { defaultStudentUsername, normalizeUsername, validateUsername } from "@/l
 import { type BulkResult, type BulkRow, issueStudentBatch } from "../../actions";
 
 const BATCH_SIZE = 20;
-const SAMPLE = "학번\t이름\t전화번호\t아이디(선택)\n20101\t김하늘\t010-1234-5678\n20102\t이바다\t01023456789\tbada_lee";
 
 type ParsedRow = BulkRow & { problem?: string };
 
@@ -161,7 +160,6 @@ export function BulkIssueForm({ defaultYear, smsReady }: { defaultYear: number; 
           rows={8}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={SAMPLE}
           className="font-mono text-xs"
         />
       </div>
