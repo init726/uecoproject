@@ -1,5 +1,6 @@
-import { MessagesSquare, Search, UserRound } from "lucide-react";
+import { Bell, MessagesSquare, Search, UserRound } from "lucide-react";
 import Link from "next/link";
+import { getUnreadCount } from "@/components/community-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getProfile } from "@/lib/auth";
@@ -59,6 +60,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
     return text ? `/community?${text}` : "/community";
   };
   const canWrite = writableKinds(profile).length > 0;
+  const unread = await getUnreadCount();
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,6 +69,17 @@ export default async function CommunityPage(props: PageProps<"/community">) {
         description="학교 공지를 확인하고, 학생과 선생님이 함께 질문하고 이야기하는 공간입니다."
         actions={
           <>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/community/notifications">
+                <Bell aria-hidden="true" />
+                알림
+                {unread > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 text-[11px] leading-5 font-semibold text-primary-foreground">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <Button asChild variant="outline" size="sm">
               <Link href="/community/me">
                 <UserRound aria-hidden="true" />내 활동

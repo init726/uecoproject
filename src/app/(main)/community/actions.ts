@@ -140,3 +140,11 @@ export async function setPinned(postId: string, pinned: boolean) {
   revalidatePath("/community");
   revalidatePath(`/community/${postId}`);
 }
+
+// 알림 모두 읽음. 메뉴의 알림 배지도 함께 갱신되도록 레이아웃까지 다시 그린다.
+export async function markAllNotificationsRead() {
+  await getProfile();
+  const supabase = await createClient();
+  await supabase.rpc("mark_all_notifications_read");
+  revalidatePath("/", "layout");
+}

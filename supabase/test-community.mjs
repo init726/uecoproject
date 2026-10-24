@@ -5,7 +5,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 
-const [schemaPath, communityPath] = process.argv.slice(2);
+const [schemaPath, ...communityPaths] = process.argv.slice(2);
 const db = new PGlite();
 
 const stub = `
@@ -31,8 +31,8 @@ alter default privileges in schema public grant execute on functions to anon, au
 
 await db.exec(stub);
 await db.exec(readFileSync(schemaPath, "utf8"));
-await db.exec(readFileSync(communityPath, "utf8"));
-console.log("schema + community applied OK");
+for (const path of communityPaths) await db.exec(readFileSync(path, "utf8"));
+console.log(`schema + ${communityPaths.length} community file(s) applied OK`);
 
 let failures = 0;
 const ok = (cond, msg) => {
@@ -40,8 +40,16 @@ const ok = (cond, msg) => {
   if (!cond) failures++;
 };
 
+// 도배 방지(community-v2.sql)가 일반 테스트를 막지 않도록, 기본적으로는 이전 기록의 시각을 하루 전으로 돌린다.
+// 도배 방지 전용 구간에서만 backdate = false 로 실제 제한을 적용한다.
+let backdate = true;
 async function as(uid, fn) {
   await db.query("reset role");
+  if (backdate) {
+    await db.query("update public.posts set created_at = created_at - interval '1 day' where created_at > now() - interval '12 hours'");
+    await db.query("update public.comments set created_at = created_at - interval '1 day' where created_at > now() - interval '12 hours'");
+    await db.query("update public.reports set created_at = created_at - interval '1 day' where created_at > now() - interval '12 hours'");
+  }
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [uid ?? ""]);
   await db.query(uid ? "set role authenticated" : "set role anon");
   try {
@@ -237,6 +245,122 @@ ok((await q(S6, "update public.profiles set suspended = false where id = $1", [S
 // --- 계정 삭제 시 정리 ---
 await db.query("delete from auth.users where id = $1", [S2]);
 ok((await db.query("select * from public.comments where author_id = $1", [S2])).rows.length === 0, "deleting an account removes its comments");
+
+
+// =====================================================================
+// community-v2: 알림
+// =====================================================================
+const N1 = await signup("n1@school.kr", { name: "알림글쓴이", role: "student", student_no: "20401", privacy_agreed: "true" });
+const N2 = await signup("n2@school.kr", { name: "알림댓글러", role: "student", student_no: "20402", privacy_agreed: "true" });
+const N3 = await signup("n3@school.kr", { name: "알림제3자", role: "student", student_no: "20403", privacy_agreed: "true" });
+const nr = [];
+for (let i = 0; i < 3; i++) nr.push(await signup(`nr${i}@school.kr`, { name: `알림신고${i}`, role: "student", student_no: `2041${i}`, privacy_agreed: "true" }));
+const notes = (uid) => q(uid, "select * from public.notifications order by created_at, id").then((r) => r.rows);
+
+const np = (await insertPost(N1, "question", "알림 테스트 질문 제목", "본문")).rows[0];
+await q(N2, "insert into public.comments (post_id, author_id, body) values ($1, $2, '답변이에요') returning id", [np.id, N2]);
+let n1 = await notes(N1);
+ok(n1.length === 1 && n1[0].kind === "comment" && n1[0].actor_name === "알림댓글러" && n1[0].excerpt === "알림 테스트 질문 제목" && n1[0].read_at === null,
+  "post author is notified of a new comment (actor, excerpt, unread)");
+await q(N1, "insert into public.comments (post_id, author_id, body) values ($1, $2, '내 글에 내가 단 댓글')", [np.id, N1]);
+ok((await notes(N1)).length === 1, "own comment on own post sends no notification");
+ok((await notes(N2)).length === 0 && (await notes(N3)).length === 0, "only the author gets the notification");
+await expectError(q(N3, "insert into public.notifications (user_id, kind, post_id) values ($1, 'comment', $2)", [N3, np.id]), "users cannot create notifications");
+await expectError(q(N1, "update public.notifications set read_at = null where user_id = $1", [N1]), "users cannot update notifications directly");
+await expectError(q(N1, "delete from public.notifications where user_id = $1", [N1]), "users cannot delete notifications");
+await q(N3, "select public.mark_notification_read($1)", [n1[0].id]);
+ok((await notes(N1))[0].read_at === null, "another user cannot mark my notification read");
+await q(N1, "select public.mark_notification_read($1)", [n1[0].id]);
+ok((await notes(N1))[0].read_at !== null, "owner marks notification read");
+
+// 신고 3회 -> 글쓴이에게 '숨김' 알림 -> 관리자 복구 -> '복구' 알림 -> 관리자 삭제 -> '삭제' 알림
+for (const u of nr) await q(u, "select public.report_content($1, null, '사유')", [np.id]);
+n1 = await notes(N1);
+ok(n1.some((n) => n.kind === "hidden" && n.target_type === "post" && n.post_id === np.id), "author is notified when the post is auto-hidden");
+await q(A, "select public.moderate_content($1, null, 'restore', '복구 사유')", [np.id]);
+ok((await notes(N1)).some((n) => n.kind === "restored"), "author is notified on restore");
+await q(A, "select public.moderate_content($1, null, 'delete', '삭제 사유')", [np.id]);
+ok((await notes(N1)).some((n) => n.kind === "deleted" && n.excerpt === "알림 테스트 질문 제목"), "author is notified on admin delete (excerpt kept)");
+
+// 내가 직접 지우면 알림 없음
+const np2 = (await insertPost(N1, "free", "직접 지울 글", "x")).rows[0];
+const before = (await notes(N1)).length;
+await q(N1, "select public.delete_post($1)", [np2.id]);
+ok((await notes(N1)).length === before, "deleting my own post sends no notification");
+
+// 댓글 숨김 알림
+const np3 = (await insertPost(N3, "free", "댓글 알림용 글", "x")).rows[0];
+const nc3 = (await q(N2, "insert into public.comments (post_id, author_id, body) values ($1, $2, '숨겨질 댓글') returning id", [np3.id, N2])).rows[0];
+await q(A, "select public.moderate_content(null, $1, 'hide', '확인 필요')", [nc3.id]);
+const n2 = await notes(N2);
+ok(n2.some((n) => n.kind === "hidden" && n.target_type === "comment" && n.comment_id === nc3.id && n.excerpt === "숨겨질 댓글"), "comment author is notified when the comment is hidden");
+await q(N2, "select public.mark_all_notifications_read()");
+ok((await notes(N2)).every((n) => n.read_at !== null), "mark all read");
+ok((await notes(N3)).some((n) => n.kind === "comment") && (await notes(N3)).every((n) => n.read_at === null), "mark all read only affects my own");
+
+// =====================================================================
+// community-v2: 도배 방지 (이 구간부터 실제 제한 적용)
+// =====================================================================
+backdate = false;
+const ago = (table, uid, interval) =>
+  db.query(`update public.${table} set created_at = now() - interval '${interval}' where ${table === "reports" ? "reporter_id" : "author_id"} = $1`, [uid]);
+const SP = await signup("sp@school.kr", { name: "도배학생", role: "student", student_no: "20501", privacy_agreed: "true" });
+
+await insertPost(SP, "free", "도배 1", "내용 1");
+await expectError(insertPost(SP, "free", "도배 바로 다음", "내용"), "second post within 10 seconds is blocked", "너무 빨리");
+await ago("posts", SP, "1 minute");
+await insertPost(SP, "free", "도배 2", "내용 2");
+await ago("posts", SP, "1 minute");
+await insertPost(SP, "free", "도배 3", "내용 3");
+await ago("posts", SP, "1 minute");
+await expectError(insertPost(SP, "free", "도배 4", "내용 4"), "4th post within 10 minutes is blocked", "10분에 3개");
+await ago("posts", SP, "11 minutes");
+ok((await insertPost(SP, "free", "도배 5", "내용 5")).rows.length === 1, "limit resets after the window");
+await ago("posts", SP, "30 minutes"); // 10분 창 밖, 1시간 안
+await expectError(insertPost(SP, "free", "도배 5", "내용 5"), "identical post within an hour is blocked", "같은 내용");
+// 방금 쓴 글들이 서로 1분씩 간격으로 10분 창 안에 남도록, 기존 글 시각을 1분씩만 뒤로 민다.
+for (const n of [7, 8, 9]) {
+  await insertPost(SP, "free", `도배 ${n}`, `내용 ${n}`);
+  await db.query("update public.posts set created_at = created_at - interval '1 minute' where author_id = $1", [SP]);
+}
+const wait = await insertPost(SP, "free", "도배 6", "내용 6").catch((e) => e);
+ok(wait.message?.includes("분 뒤에"), `error tells how long to wait: ${wait.message?.split("\n")[0]}`);
+
+// 삭제해도 횟수에 센다
+const SP2 = await signup("sp2@school.kr", { name: "도배학생2", role: "student", student_no: "20502", privacy_agreed: "true" });
+for (let i = 1; i <= 3; i++) {
+  const row = (await insertPost(SP2, "free", `삭제도배 ${i}`, `x${i}`)).rows[0];
+  await q(SP2, "select public.delete_post($1)", [row.id]);
+  await ago("posts", SP2, "1 minute");
+}
+await expectError(insertPost(SP2, "free", "삭제도배 4", "x4"), "deleted posts still count toward the limit", "10분에 3개");
+
+// 관리자는 글 제한 없음
+for (let i = 1; i <= 5; i++) await q(A, "insert into public.posts (author_id, kind, title, body) values ($1, 'notice', $2, 'x')", [A, `공지 ${i}`]);
+ok(true, "admin can post notices without the limit");
+
+// 댓글
+const CP = await signup("cp@school.kr", { name: "댓글글쓴이", role: "student", student_no: "20503", privacy_agreed: "true" });
+const cpost = (await insertPost(CP, "free", "댓글 도배 글", "x")).rows[0];
+for (let i = 1; i <= 8; i++) await q(SP, "insert into public.comments (post_id, author_id, body) values ($1, $2, $3)", [cpost.id, SP, `도배 댓글 ${i}`]);
+await expectError(q(SP, "insert into public.comments (post_id, author_id, body) values ($1, $2, '9번째')", [cpost.id, SP]), "9th comment within 2 minutes is blocked", "2분에 8개");
+await ago("comments", SP, "3 minutes");
+await q(SP, "insert into public.comments (post_id, author_id, body) values ($1, $2, '같은 말')", [cpost.id, SP]);
+await expectError(q(SP, "insert into public.comments (post_id, author_id, body) values ($1, $2, '같은 말')", [cpost.id, SP]), "identical comment within a minute is blocked", "같은 댓글");
+
+// 신고: 1시간 10건
+const RP = await signup("rp@school.kr", { name: "신고도배", role: "student", student_no: "20601", privacy_agreed: "true" });
+const targets = [];
+for (let i = 1; i <= 11; i++) {
+  const owner = await signup(`own${i}@school.kr`, { name: `작성자${i}`, role: "student", student_no: `207${String(i).padStart(2, "0")}`, privacy_agreed: "true" });
+  targets.push((await insertPost(owner, "free", `신고 대상 ${i}`, "x")).rows[0].id);
+}
+for (let i = 0; i < 10; i++) await q(RP, "select public.report_content($1, null, '사유')", [targets[i]]);
+await expectError(q(RP, "select public.report_content($1, null, '사유')", [targets[10]]), "11th report within an hour is blocked", "10건");
+await ago("reports", RP, "2 hours");
+await q(RP, "select public.report_content($1, null, '사유')", [targets[10]]);
+ok(true, "report limit resets after an hour");
+backdate = true;
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

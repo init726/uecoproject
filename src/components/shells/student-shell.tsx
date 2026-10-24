@@ -1,5 +1,7 @@
 import { House, ListTodo, MessageSquare, User } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
@@ -20,8 +22,13 @@ export function StudentShell({ profile, children }: { profile: Profile; children
           <SchoolBrand tone="light" subtitle="" />
           <nav aria-label="주 메뉴" className="ml-4 hidden items-center gap-1 md:flex">
             {NAV.map(({ href, label }) => (
-              <NavLink key={href} href={href} className="school-top-link">
+              <NavLink key={href} href={href} className="school-top-link gap-2">
                 {label}
+                {href === "/community" && (
+                  <Suspense fallback={null}>
+                    <CommunityBadge tone="onPrimary" />
+                  </Suspense>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -43,6 +50,11 @@ export function StudentShell({ profile, children }: { profile: Profile; children
           >
             <Icon className="size-5" />
             {label}
+            {href === "/community" && (
+              <Suspense fallback={null}>
+                <CommunityBadge className="absolute top-1.5 left-1/2 ml-2" />
+              </Suspense>
+            )}
           </NavLink>
         ))}
       </nav>
