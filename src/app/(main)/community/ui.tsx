@@ -66,7 +66,7 @@ const KIND_STYLE = {
 export function chipClass(active: boolean) {
   return cn(
     "flex min-h-9 items-center rounded-full px-3.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-    active && "bg-accent font-semibold text-primary hover:bg-accent hover:text-primary",
+    active && "font-bold text-foreground ring-1 ring-foreground",
   );
 }
 

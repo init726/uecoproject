@@ -166,7 +166,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
               href={href({ open: !openOnly })}
               className={cn(
                 "ml-2 flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground hover:bg-muted",
-                openOnly && "border-primary bg-accent font-semibold text-primary hover:bg-accent",
+                openOnly && "border-foreground font-bold text-foreground ring-1 ring-foreground",
               )}
               aria-pressed={openOnly}
             >
