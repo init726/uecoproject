@@ -1,31 +1,20 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
-// 글자만으로 된 로고. tone="light"는 남색 바탕(위쪽 바) 위에서 쓴다.
+// 글자만으로 된 로고. 앞에 형광 연두 점을 붙여 사이트 강조색과 이어지게 했다.
+// tone 은 예전(파란 위쪽 바 위에서 쓰던) 호출과 맞추려고 남겨 둔 값이고, 지금은 라이트·다크 모두 같은 모양이다.
 export function SchoolBrand({
   href = "/home",
   subtitle = "학교생활 통합 포털",
-  tone = "dark",
 }: {
   href?: string;
   subtitle?: string;
   tone?: "dark" | "light";
 }) {
-  const light = tone === "light";
   return (
-    <Link
-      href={href}
-      className={cn("flex min-w-0 items-baseline gap-2.5 rounded-sm", light && "focus-visible:outline-white")}
-      aria-label="우리학교 홈"
-    >
-      <span className={cn("text-xl leading-none font-extrabold tracking-tight", light ? "text-white" : "text-school-navy")}>
-        우리학교
-      </span>
-      {subtitle && (
-        <span className={cn("truncate text-xs font-medium", light ? "text-white/80" : "text-muted-foreground")}>
-          {subtitle}
-        </span>
-      )}
+    <Link href={href} className="flex min-w-0 items-center gap-2.5 rounded-sm" aria-label="우리학교 홈">
+      <span className="size-3 shrink-0 rounded-[4px] bg-school-gold" aria-hidden="true" />
+      <span className="text-xl leading-none font-black tracking-tight text-school-navy">우리학교</span>
+      {subtitle && <span className="truncate text-xs font-medium text-muted-foreground">{subtitle}</span>}
     </Link>
   );
 }

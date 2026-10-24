@@ -14,14 +14,8 @@ export const getUnreadCount = cache(async () => {
 });
 
 // 메뉴의 "커뮤니티" 옆에 붙는 새 알림 수 배지 (Suspense 안에서 쓴다)
-//  - onPrimary: 코발트 위쪽 바 위. 평소엔 흰 배지, 지금 보는 메뉴(흰 알약) 위에서는 코발트 배지로 바뀐다.
-export async function CommunityBadge({
-  tone = "default",
-  className,
-}: {
-  tone?: "default" | "onPrimary";
-  className?: string;
-}) {
+// 지금 보는 메뉴(연두 알약) 위에서도 보이도록 주색(라이트=검정, 다크=연두)을 쓴다.
+export async function CommunityBadge({ className }: { className?: string }) {
   const count = await getUnreadCount();
   if (!count) return null;
 
@@ -30,10 +24,7 @@ export async function CommunityBadge({
       role="status"
       aria-label={`새 알림 ${count}개`}
       className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] leading-none font-semibold tabular-nums",
-        tone === "onPrimary"
-          ? "bg-white text-primary in-data-active:bg-primary in-data-active:text-white"
-          : "bg-primary text-primary-foreground",
+        "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] leading-none font-semibold text-primary-foreground tabular-nums",
         className,
       )}
     >
