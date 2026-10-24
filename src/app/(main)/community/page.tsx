@@ -119,6 +119,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
               placeholder="제목이나 내용으로 검색"
               maxLength={50}
               aria-label="글 검색"
+              autoComplete="off"
               className="sm:w-64"
             />
             <Button type="submit" variant="outline" size="sm" className="h-10">
