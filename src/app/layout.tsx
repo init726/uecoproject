@@ -10,8 +10,11 @@ export const metadata: Metadata = {
 
 // 일부 브라우저 확장 프로그램이 페이지의 모든 <div>에 bis_skin_checked 속성을 몰래 붙여서
 // 개발 서버에 hydration 경고가 뜬다. React가 화면을 연결하기 전에 그 속성만 걷어낸다.
-// 개발 서버에서만 실행하고, 10초 뒤에는 스스로 멈춘다. (배포된 사이트에는 들어가지 않는다)
+// 개발 서버에서만 실행한다. 초기 DOM과 이후 페이지 이동에서 추가되는 DOM을 모두 처리한다.
+// 특정 속성만 제거하며, 앱 자체의 hydration 오류는 숨기지 않는다.
 const STRIP_EXTENSION_ATTRIBUTES = `(() => {
+  const KEY = Symbol.for("school.dev.extensionAttributeGuard");
+  if (window[KEY]) return;
   const NAME = "bis_skin_checked";
   const clean = (root) => {
     if (root.nodeType !== 1) return;
@@ -20,12 +23,15 @@ const STRIP_EXTENSION_ATTRIBUTES = `(() => {
   };
   const observer = new MutationObserver((records) => {
     for (const r of records) {
-      if (r.type === "attributes") r.target.removeAttribute(NAME);
+      if (r.type === "attributes") {
+        if (r.target.hasAttribute(NAME)) r.target.removeAttribute(NAME);
+      }
       else r.addedNodes.forEach(clean);
     }
   });
   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: [NAME] });
-  setTimeout(() => observer.disconnect(), 10000);
+  clean(document.documentElement);
+  window[KEY] = observer;
 })();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
