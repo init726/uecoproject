@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { DeadlineLoad } from "@/components/deadline-load";
 import { createAssignment } from "./actions";
 
 const TYPES = [
@@ -18,6 +19,7 @@ export function AssignmentForm({ classId }: { classId: string }) {
   const [state, formAction, pending] = useActionState(createAssignment.bind(null, classId), {});
   const [type, setType] = useState<"file" | "text">("file");
 
+  const [due, setDue] = useState("");
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <fieldset className="grid grid-cols-2 gap-2">
@@ -68,7 +70,7 @@ export function AssignmentForm({ classId }: { classId: string }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
           <Label htmlFor="due_at">마감 일시</Label>
-          <Input id="due_at" name="due_at" type="datetime-local" required />
+          <Input id="due_at" name="due_at" type="datetime-local" value={due} onChange={e=>setDue(e.target.value)} required />
         </div>
         {type === "text" && (
           <div className="flex flex-col gap-2">
@@ -87,6 +89,8 @@ export function AssignmentForm({ classId }: { classId: string }) {
         )}
       </div>
 
+      <DeadlineLoad classId={classId} day={due.slice(0,10)} />
+      {type === "text" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="self_review" className="size-4" />자기평가서 과제 (기존 글 제출 내용을 바탕으로 AI 초안 지원)</label>}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="allow_late" defaultChecked className="size-4" />
         마감 후에도 제출 받기 (지각으로 표시)

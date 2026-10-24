@@ -5,7 +5,7 @@ import { smsReady } from "@/lib/sms";
 import { createAdminClient, hasAdminKey } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-const TABLES = ["profiles", "classes", "class_slots", "enrollments", "notices", "assignments", "submissions", "semesters"];
+const TABLES = ["profiles", "classes", "class_slots", "enrollments", "notices", "assignments", "submissions", "semesters", "submission_feedback", "surveys", "survey_responses", "learning_notifications", "account_recovery_requests", "ai_requests"];
 
 type Check = { label: string; ok: boolean; detail: string };
 

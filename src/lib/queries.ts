@@ -1,3 +1,4 @@
+import { withSchemaFallback } from "./schema-compat";
 import type { createClient } from "@/lib/supabase/server";
 import type { AssignmentType } from "@/lib/types";
 
@@ -15,18 +16,20 @@ export type StudentAssignment = {
 };
 
 type Row = Omit<StudentAssignment, "submitted" | "is_late"> & {
-  submissions: { is_late: boolean; version: number }[];
+  submissions: { is_late: boolean; version: number; canceled_at: string | null }[];
 };
 
 // 학생이 참여한 모든 클래스의 과제 + 내 제출 여부 (마감 빠른 순)
 // 과제와 제출물을 한 번의 요청으로 같이 가져온다. RLS 덕분에 submissions에는 내 제출물만 들어 있다.
 export async function getStudentAssignments(supabase: Supabase, semester?: string): Promise<StudentAssignment[]> {
+  const {data,error} = await withSchemaFallback<Row[]>(extended => {
   let query = supabase
     .from("assignments")
-    .select("id, title, due_at, type, allow_late, class:classes!inner(id, name), submissions(is_late, version)")
+    .select(`id, title, due_at, type, allow_late, class:classes!inner(id, name), submissions(is_late, version${extended ? ", canceled_at" : ""})`)
     .order("due_at");
   if (semester) query = query.eq("class.semester", semester);
-  const { data, error } = await query.overrideTypes<Row[], { merge: false }>();
+  return query.overrideTypes<Row[], { merge: false }>();
+  }, ["canceled_at"]);
   if (error) throw new Error("과제를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
 
   return (data ?? []).map(({ submissions, ...a }) => {
@@ -34,6 +37,6 @@ export async function getStudentAssignments(supabase: Supabase, semester?: strin
       (best, s) => (!best || s.version > best.version ? s : best),
       null,
     );
-    return { ...a, submitted: latest !== null, is_late: latest?.is_late ?? false };
+    return { ...a, submitted: latest !== null && !latest.canceled_at, is_late: latest?.is_late ?? false };
   });
 }

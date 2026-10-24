@@ -31,7 +31,7 @@ export async function submitText(
     .insert({ assignment_id: assignmentId, student_id: user.id, content });
   if (error) return { error: toMessage(error) };
 
-  revalidatePath(`/assignments/${assignmentId}`);
+  revalidatePath("/", "layout");
   return { message: "제출했어요." };
 }
 
@@ -56,6 +56,29 @@ export async function recordFileSubmission(
   });
   if (error) return { error: toMessage(error) };
 
-  revalidatePath(`/assignments/${assignmentId}`);
+  revalidatePath("/", "layout");
   return { message: "제출했어요." };
+}
+
+export async function cancelSubmission(assignmentId: string, _prev: ActionState): Promise<ActionState> {
+  void _prev;
+  const { requireRole } = await import("@/lib/auth");
+  await requireRole("student");
+  const client = await createClient();
+  const { error } = await client.rpc("cancel_submission", { p_assignment_id: assignmentId });
+  if (error) return { error: toMessage(error) };
+  revalidatePath("/", "layout");
+  return { message: "제출을 취소했습니다. 이전 기록은 보존됩니다." };
+}
+
+export async function saveFeedback(submissionId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { requireRole } = await import("@/lib/auth");
+  await requireRole("teacher");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body || body.length > 5000) return { error: "피드백은 1~5000자 이내로 작성해 주세요." };
+  const client = await createClient();
+  const { error } = await client.rpc("save_submission_feedback", { p_submission_id: submissionId, p_body: body });
+  if (error) return { error: toMessage(error) };
+  revalidatePath("/", "layout");
+  return { message: "피드백을 저장했습니다." };
 }

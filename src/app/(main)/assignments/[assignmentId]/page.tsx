@@ -1,3 +1,4 @@
+import {withSchemaFallback,isMissingSchema} from "@/lib/schema-compat";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,7 @@ import { countChars, formatDateTime, formatFileSize, isPast } from "@/lib/format
 import { createClient } from "@/lib/supabase/server";
 import type { Assignment, Submission } from "@/lib/types";
 import { FileSubmitForm } from "./file-submit-form";
+import { SubmissionControls, FeedbackForm } from "./submission-controls";
 import { TextSubmitForm } from "./text-submit-form";
 
 type Member = {
@@ -19,7 +21,7 @@ type AssignmentDetail = Assignment & {
 };
 
 const SUBMISSION_COLUMNS =
-  "id, assignment_id, student_id, version, file_path, file_name, file_size, content, submitted_at, is_late";
+  "id, assignment_id, student_id, version, file_path, file_name, file_size, content, submitted_at, is_late, canceled_at";
 
 export default async function AssignmentPage(props: PageProps<"/assignments/[assignmentId]">) {
   const { assignmentId } = await props.params;
@@ -27,25 +29,34 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
 
   // 프로필, 과제(+반 학생 명단), 제출물을 동시에 가져온다.
   // RLS: 학생에게는 자기 제출물과 자기 수강 정보만, 담당 교사에게는 반 전체가 돌아온다.
-  const [profile, { data: assignment }, { data: submissionRows }] = await Promise.all([
+  const [profile, { data: assignment, error: assignmentError, extended: purposeReady }, { data: submissionRows, error: submissionError, extended: cancelReady }] = await Promise.all([
     getProfile(),
-    supabase
+    withSchemaFallback<AssignmentDetail>(extended => supabase
       .from("assignments")
       .select(
-        "id, class_id, title, description, rubric, due_at, type, max_chars, allow_late, class:classes(id, name, teacher_id, enrollments(student_id, student:profiles!enrollments_student_id_fkey(name, student_no)))",
+        `id, class_id, title, description, rubric, due_at, type, max_chars, allow_late${extended ? ", purpose" : ""}, class:classes(id, name, teacher_id, enrollments(student_id, student:profiles!enrollments_student_id_fkey(name, student_no)))`,
       )
       .eq("id", assignmentId)
-      .maybeSingle<AssignmentDetail>(),
-    supabase
+      .maybeSingle<AssignmentDetail>(), ["purpose"]),
+    withSchemaFallback<Submission[]>(extended => supabase
       .from("submissions")
-      .select(SUBMISSION_COLUMNS)
+      .select(extended ? SUBMISSION_COLUMNS : SUBMISSION_COLUMNS.replace(", canceled_at", ""))
       .eq("assignment_id", assignmentId)
       .order("version", { ascending: false })
-      .overrideTypes<Submission[], { merge: false }>(),
+      .overrideTypes<Submission[], { merge: false }>(), ["canceled_at"]),
   ]);
+  if (assignmentError) throw new Error("과제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  if (submissionError) throw new Error("제출 기록을 불러오지 못했습니다. DB 업데이트를 확인해 주세요.");
   if (!assignment?.class) notFound();
   const submissions = submissionRows ?? [];
 
+  const { data: feedbackRows, error: feedbackError } = submissions.length ? await supabase.from("submission_feedback").select("submission_id, body, updated_at").in("submission_id", submissions.map(s=>s.id)) : {data:[],error:null};
+  const feedbackReady=!isMissingSchema(feedbackError,["submission_feedback"]);
+  if (feedbackError && feedbackReady) throw new Error("피드백을 불러오지 못했습니다. DB 업데이트를 확인해 주세요.");
+  const feedback = Object.fromEntries((feedbackRows ?? []).map(f=>[f.submission_id,f]));
+  const {data:aiLogs,error:aiError}=purposeReady && assignment.purpose==="self_review"?await supabase.from("ai_draft_logs").select("student_id,created_at").eq("assignment_id",assignmentId):{data:[],error:null};
+  if(aiError && !isMissingSchema(aiError,["ai_draft_logs"]))throw new Error("AI 초안 요청 기록을 불러오지 못했습니다.");
+  const aiCounts:Record<string,number>={};for(const log of aiLogs??[])aiCounts[log.student_id]=(aiCounts[log.student_id]??0)+1;
   const isTeacher = assignment.class.teacher_id === profile.id;
   const overdue = isPast(assignment.due_at);
 
@@ -81,7 +92,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
       )}
 
       {isTeacher ? (
-        <TeacherView members={assignment.class.enrollments} submissions={submissions} />
+        <TeacherView members={assignment.class.enrollments} submissions={submissions} feedback={feedback} aiCounts={aiCounts} feedbackReady={feedbackReady} />
       ) : (
         <>
           <Card>
@@ -96,6 +107,9 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
               ) : (
                 <TextSubmitForm
                   assignmentId={assignmentId}
+                  userId={profile.id}
+                  purpose={assignment.purpose??null}
+                  aiEnabled={purposeReady && feedbackReady}
                   maxChars={assignment.max_chars ?? 10000}
                   lastSubmitted={submissions[0]?.content ?? null}
                 />
@@ -103,6 +117,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
             </CardContent>
           </Card>
 
+          {cancelReady && submissions[0] && !submissions[0].canceled_at && !overdue && <SubmissionControls assignmentId={assignmentId} />}
           {submissions.length > 0 && (
             <section className="flex flex-col gap-2">
               <h3 className="font-semibold">내 제출 기록</h3>
@@ -110,7 +125,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
                 제출 기록은 고치거나 지울 수 없어요. 제출 시각은 서버 시간으로 기록돼요.
               </p>
               {submissions.map((s) => (
-                <SubmissionItem key={s.id} submission={s} />
+                <div key={s.id}><SubmissionItem submission={s} />{feedback[s.id] && <FeedbackBody feedback={feedback[s.id]} />}</div>
               ))}
             </section>
           )}
@@ -121,7 +136,8 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
 }
 
 // ASG-05: 교사용 제출 현황 (제출 / 지각 / 미제출)
-function TeacherView({ members: memberRows, submissions }: { members: Member[]; submissions: Submission[] }) {
+type Feedback = { body: string; updated_at: string };
+function TeacherView({ members: memberRows, submissions, feedback, aiCounts, feedbackReady }: { feedbackReady:boolean; aiCounts:Record<string,number>; members: Member[]; submissions: Submission[]; feedback: Record<string, Feedback> }) {
   const members = [...memberRows].sort((a, b) =>
     (a.student?.student_no ?? "").localeCompare(b.student?.student_no ?? ""),
   );
@@ -134,7 +150,7 @@ function TeacherView({ members: memberRows, submissions }: { members: Member[]; 
     versions.set(s.student_id, (versions.get(s.student_id) ?? 0) + 1);
   }
 
-  const submitted = members.filter((m) => latest.has(m.student_id));
+  const submitted = members.filter((m) => latest.has(m.student_id) && !latest.get(m.student_id)!.canceled_at);
   const late = submitted.filter((m) => latest.get(m.student_id)?.is_late).length;
   const missing = members.length - submitted.length;
 
@@ -160,8 +176,9 @@ function TeacherView({ members: memberRows, submissions }: { members: Member[]; 
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{m.student?.student_no}</span>
                 <span className="font-medium">{m.student?.name}</span>
+                {aiCounts[m.student_id]>0 && <span className="text-xs text-muted-foreground">AI 초안 요청 {aiCounts[m.student_id]}회</span>}
                 <span className="ml-auto">
-                  {!s ? (
+                  {!s || s.canceled_at ? (
                     <Badge variant="secondary">미제출</Badge>
                   ) : (
                     <Badge variant={s.is_late ? "destructive" : "default"}>
@@ -177,6 +194,8 @@ function TeacherView({ members: memberRows, submissions }: { members: Member[]; 
                     {(versions.get(m.student_id) ?? 1) > 1 && ` · ${versions.get(m.student_id)}번 제출`}
                   </p>
                   <SubmissionBody submission={s} />
+                  {feedbackReady && <FeedbackForm submissionId={s.id} body={feedback[s.id]?.body ?? ""} />}
+                  <details><summary className="cursor-pointer text-sm text-muted-foreground">이전 제출 기록</summary><div className="mt-3 space-y-3">{submissions.filter(v=>v.student_id===m.student_id && v.id!==s.id).map(v=><div key={v.id}><SubmissionItem submission={v} />{feedback[v.id] && <FeedbackBody feedback={feedback[v.id]} />}{feedbackReady && <FeedbackForm submissionId={v.id} body={feedback[v.id]?.body ?? ""} />}</div>)}</div></details>
                 </>
               )}
             </CardContent>
@@ -194,6 +213,7 @@ function SubmissionItem({ submission: s }: { submission: Submission }) {
         <div className="flex items-center gap-2 text-sm">
           <span className="font-medium">{s.version}번째 제출</span>
           <span className="text-muted-foreground">{formatDateTime(s.submitted_at)}</span>
+          {s.canceled_at && <Badge variant="secondary">취소됨 · {formatDateTime(s.canceled_at)}</Badge>}
           {s.is_late && <Badge variant="destructive">지각</Badge>}
         </div>
         <SubmissionBody submission={s} />
@@ -244,3 +264,5 @@ function Stat({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+function FeedbackBody({feedback}:{feedback:Feedback}) { return <div className="rounded-lg border border-primary/20 bg-accent/30 p-4"><p className="text-sm font-semibold">선생님 피드백</p><p className="mt-2 whitespace-pre-wrap text-sm">{feedback.body}</p><p className="mt-2 text-xs text-muted-foreground">{formatDateTime(feedback.updated_at)}</p></div>; }

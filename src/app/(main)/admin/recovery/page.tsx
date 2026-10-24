@@ -1,0 +1,6 @@
+import Link from "next/link";
+import {requireAdmin} from "@/lib/auth";
+import {createClient} from "@/lib/supabase/server";
+import {formatDateTime} from "@/lib/format";
+import {ResolveForm} from "./resolve-form";
+export default async function RecoveryRequests(){await requireAdmin();const client=await createClient();const {data,error}=await client.from("account_recovery_requests").select("id,username,name,student_no,status,created_at").order("created_at",{ascending:false}).limit(100);if(error)throw new Error("복구 요청을 불러오지 못했습니다. DB 업데이트를 확인해 주세요.");return <div className="space-y-5"><h2 className="page-title">계정 복구 요청</h2><p className="text-sm text-muted-foreground">대면 등 학교의 확인 절차로 본인을 확인한 뒤 <Link className="underline" href="/admin/users">사용자 관리</Link>에서 비밀번호를 초기화하고 안전하게 전달하세요. 요청 내용만으로 자동 초기화하지 않습니다.</p>{data?.length?data.map(r=><section className="school-panel p-5" key={r.id}><h3 className="font-semibold">{r.name} · {r.username}</h3><p className="mt-1 text-sm text-muted-foreground">{r.student_no??"교직원"} · {formatDateTime(r.created_at)} · {r.status==="pending"?"접수":r.status==="resolved"?"처리 완료":"반려"}</p>{r.status==="pending"&&<ResolveForm id={r.id}/>}</section>):<p>접수된 요청이 없습니다.</p>}</div>;}

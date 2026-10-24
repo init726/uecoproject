@@ -15,7 +15,7 @@ export default function LoginPage() {
   return (
     <Card className="py-7 [--card-spacing:--spacing(6)]">
       <CardHeader>
-        <p className="eyebrow">우리학교에 오신 것을 환영합니다</p>
+        <p className="eyebrow">학교생활 통합 포털에 오신 것을 환영합니다</p>
         <CardTitle className="text-2xl font-semibold text-school-navy">로그인</CardTitle>
         <CardDescription className="mt-2 text-xs">학교에서 발급받은 아이디로 시작하세요.</CardDescription>
       </CardHeader>
@@ -42,6 +42,7 @@ export default function LoginPage() {
               required
             />
           </div>
+          <Link href="/recover" className="text-right text-xs underline">비밀번호를 잊었나요?</Link>
           <FormMessage state={state} />
           <Button type="submit" size="lg" disabled={pending}>
             {pending ? "로그인 중..." : "로그인"}

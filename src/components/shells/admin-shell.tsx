@@ -12,6 +12,8 @@ const NAV = [
   { href: "/admin/accounts/bulk", label: "학생 단체 발급", icon: FileSpreadsheet },
   { href: "/admin/import", label: "엑셀 시간표 등록", icon: CalendarDays },
   { href: "/admin/users", label: "사용자 관리", icon: Users },
+  { href: "/admin/recovery", label: "계정 복구 요청", icon: UserCheck },
+  { href: "/admin/surveys", label: "설문 결과", icon: CalendarDays },
   { href: "/admin/system", label: "시스템", icon: Server },
 ];
 

@@ -1,4 +1,6 @@
 import { House, ListTodo, User } from "lucide-react";
+import { Suspense } from "react";
+import { NotificationLink } from "@/components/notification-link";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
@@ -24,7 +26,8 @@ export function StudentShell({ profile, children }: { profile: Profile; children
               </NavLink>
             ))}
           </nav>
-          <Link href="/me" className="ml-auto min-w-0 rounded-sm text-right focus-visible:outline-white">
+          <div className="ml-auto"><Suspense fallback={null}><NotificationLink /></Suspense></div>
+          <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
             <span className="block truncate text-sm font-semibold">{profile.name}</span>
             <span className="block text-xs text-white/80">{profile.student_no} · 학생</span>
           </Link>

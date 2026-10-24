@@ -13,7 +13,7 @@ export type TeacherDashboardClass = TimetableClass & {
   semester: string;
   import_key: string | null;
   enrollments: { student_id: string }[];
-  assignments: { id: string; title: string; due_at: string; class_id: string; submissions: { student_id: string }[] }[];
+  assignments: { id: string; title: string; due_at: string; class_id: string; submissions: { student_id: string; version: number; canceled_at: string | null }[] }[];
 };
 
 function DashboardHeading({ title, description, semesterControl }: { title: string; description: string; semesterControl?: React.ReactNode }) {
@@ -93,7 +93,9 @@ export function TeacherDashboard({ profile, semester, classes, semesterControl }
             : <div className="divide-y">{recent.map(a=>{
               const c=classes.find(c=>c.id===a.class_id)!;
               const total=c.enrollments.length;
-              const done=new Set(a.submissions.map(s=>s.student_id)).size;
+              const latest = new Map<string, (typeof a.submissions)[number]>();
+              for (const s of a.submissions) if (!latest.has(s.student_id) || latest.get(s.student_id)!.version < s.version) latest.set(s.student_id, s);
+              const done=[...latest.values()].filter(s=>!s.canceled_at).length;
               const rate=total?Math.min(100,Math.round(done/total*100)):0;
               return <Link key={a.id} href={`/assignments/${a.id}`} className="group block p-4 hover:bg-accent/40 sm:p-5">
                 <p className="text-[11px] text-muted-foreground">{c.name}</p><p className="mt-1 text-sm font-semibold wrap-break-word group-hover:text-primary">{a.title}</p>

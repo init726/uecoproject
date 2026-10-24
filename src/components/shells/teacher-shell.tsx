@@ -1,4 +1,6 @@
 import { BookOpen, LayoutDashboard, Plus, User } from "lucide-react";
+import { Suspense } from "react";
+import { NotificationLink } from "@/components/notification-link";
 import Link from "next/link";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +26,7 @@ export function TeacherShell({
           <SchoolBrand subtitle="교직원 공간" />
         </div>
         <nav aria-label="교사 주 메뉴" className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
+          <Suspense fallback={null}><NotificationLink /></Suspense>
           <NavLink href="/home" exact className={ITEM}>
             <LayoutDashboard className="size-4" />
             대시보드
@@ -46,6 +49,7 @@ export function TeacherShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="school-topbar flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:hidden">
           <SchoolBrand tone="light" subtitle="교직원" />
+          <Suspense fallback={null}><NotificationLink /></Suspense>
           <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
             <span className="block truncate text-sm font-semibold">{profile.name} 선생님</span>
             <span className="block text-xs text-white/80">{profile.subject}</span>

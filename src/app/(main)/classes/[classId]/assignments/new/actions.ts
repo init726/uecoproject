@@ -1,5 +1,6 @@
 "use server";
 
+import {isMissingSchema} from "@/lib/schema-compat";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { kstLocalToIso } from "@/lib/format";
@@ -38,11 +39,20 @@ export async function createAssignment(
       due_at: dueAt,
       max_chars: type === "text" ? maxChars : null,
       allow_late: allowLate,
+      ...(type === "text" && formData.get("self_review") === "on" ? {purpose: "self_review"} : {}),
     })
     .select("id")
     .single();
+  if (isMissingSchema(error,["purpose"])) return {error:"자기평가서 기능을 준비 중입니다. 일반 글 과제로 등록해 주세요."};
   if (error || !data) return { error: "과제를 저장하지 못했어요." };
 
   revalidatePath(`/classes/${classId}`);
   redirect(`/assignments/${data.id}`);
+}
+
+export async function deadlineLoad(classId:string,day:string):Promise<{rows?:import("@/components/deadline-load").DeadlineRow[];error?:string}> {
+ const {requireRole}=await import("@/lib/auth");await requireRole("teacher");
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return {error:"날짜를 선택해 주세요."};
+ const client=await createClient();const {data,error}=await client.rpc("class_deadline_load",{p_class_id:classId,p_from:day,p_to:day});
+ return error?{error:error.code==="P0001"?error.message:"과제 몰림을 확인하지 못했습니다. DB 업데이트를 확인해 주세요."}:{rows:data};
 }

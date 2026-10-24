@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { countChars } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { AiWritingHelp } from "@/components/ai-writing-help";
 import { submitText } from "./actions";
 
 // 이 기기(브라우저)에 저장된 임시저장 글을 읽는다. 사생활 보호 모드 등에서는 null.
@@ -25,14 +26,20 @@ function subscribeStorage(callback: () => void) {
 // ASG-03: 글 작성. 쓰는 동안 이 기기에 자동으로 임시저장한다.
 export function TextSubmitForm({
   assignmentId,
+  userId,
+  purpose,
+  aiEnabled = true,
   maxChars,
   lastSubmitted,
 }: {
   assignmentId: string;
+  userId: string;
+  aiEnabled?: boolean;
+  purpose: "self_review" | null;
   maxChars: number;
   lastSubmitted: string | null;
 }) {
-  const draftKey = `draft:${assignmentId}`;
+  const draftKey = `draft:${userId}:${assignmentId}`;
   const [state, formAction, pending] = useActionState(submitText.bind(null, assignmentId), {});
   const savedDraft = useSyncExternalStore(
     subscribeStorage,
@@ -77,6 +84,7 @@ export function TextSubmitForm({
       <p className={cn("text-right text-sm", over ? "text-destructive" : "text-muted-foreground")}>
         {count} / {maxChars}자
       </p>
+      {aiEnabled && <AiWritingHelp assignmentId={assignmentId} content={content} purpose={purpose} onUse={handleChange} />}
       <FormMessage state={state} />
       <Button type="submit" size="lg" disabled={pending || over || !content.trim()}>
         {pending ? "제출 중..." : lastSubmitted ? "다시 제출" : "제출"}

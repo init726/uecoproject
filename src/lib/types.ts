@@ -44,6 +44,7 @@ export type Assignment = {
   type: AssignmentType;
   max_chars: number | null;
   allow_late: boolean;
+  purpose: "self_review" | null;
 };
 
 export type Submission = {
@@ -57,6 +58,7 @@ export type Submission = {
   content: string | null;
   submitted_at: string;
   is_late: boolean;
+  canceled_at: string | null;
 };
 
 // 서버 액션이 폼에 돌려주는 결과

@@ -1,4 +1,6 @@
+import { withSchemaFallback } from "@/lib/schema-compat";
 import Link from "next/link";
+import {ClassSurveys} from "@/components/class-surveys";
 import { notFound } from "next/navigation";
 import { leaveClass } from "@/app/(main)/classes/actions";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +28,7 @@ type ClassDetail = ClassRow & {
 };
 
 type AssignmentWithSubmissions = Assignment & {
-  submissions: { student_id: string; is_late: boolean; version: number }[];
+  submissions: { student_id: string; is_late: boolean; version: number; canceled_at: string | null }[];
 };
 
 type Member = {
@@ -45,7 +47,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
   // 필요한 조회를 한꺼번에 동시에 보낸다. (하나씩 기다리면 그만큼 느려진다)
   // RLS: 담당 교사나 참여 학생이 아니면 클래스가 null로 돌아온다.
   // 제출물은 교사에게는 반 전체, 학생에게는 자기 것만 들어 있다.
-  const [profile, { data: klass }, { data: assignmentRows }, { data: noticeRows }, { data: memberRows }] =
+  const [profile, { data: klass }, { data: assignmentRows, error: assignmentsError }, { data: noticeRows }, { data: memberRows }] =
     await Promise.all([
       getProfile(),
       supabase
@@ -53,12 +55,12 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
         .select("id, teacher_id, name, semester, room, invite_code, import_key, class_slots(day, period), teacher:profiles!classes_teacher_id_fkey(name)")
         .eq("id", classId)
         .maybeSingle<ClassDetail>(),
-      supabase
+      withSchemaFallback<AssignmentWithSubmissions[]>(extended => supabase
         .from("assignments")
-        .select("id, class_id, title, description, rubric, due_at, type, max_chars, allow_late, submissions(student_id, is_late, version)")
+        .select(`id, class_id, title, description, rubric, due_at, type, max_chars, allow_late, submissions(student_id, is_late, version${extended ? ", canceled_at" : ""})`)
         .eq("class_id", classId)
         .order("due_at", { ascending: false })
-        .overrideTypes<AssignmentWithSubmissions[], { merge: false }>(),
+        .overrideTypes<AssignmentWithSubmissions[], { merge: false }>(), ["canceled_at"]),
       supabase
         .from("notices")
         .select("id, title, body, created_at")
@@ -71,6 +73,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
         .eq("class_id", classId)
         .overrideTypes<Member[], { merge: false }>(),
     ]);
+  if (assignmentsError) throw new Error("과제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
   if (!klass) notFound();
 
   const isTeacher = klass.teacher_id === profile.id;
@@ -84,12 +87,12 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
   // 과제별로 학생마다 가장 최근 제출의 지각 여부
   const latestByAssignment = new Map<string, Map<string, boolean>>();
   for (const a of assignments) {
-    const latest = new Map<string, { version: number; late: boolean }>();
+    const latest = new Map<string, { version: number; late: boolean; canceled: boolean }>();
     for (const s of a.submissions) {
       const prev = latest.get(s.student_id);
-      if (!prev || s.version > prev.version) latest.set(s.student_id, { version: s.version, late: s.is_late });
+      if (!prev || s.version > prev.version) latest.set(s.student_id, { version: s.version, late: s.is_late, canceled: Boolean(s.canceled_at) });
     }
-    latestByAssignment.set(a.id, new Map([...latest].map(([id, v]) => [id, v.late])));
+    latestByAssignment.set(a.id, new Map([...latest].filter(([, v]) => !v.canceled).map(([id, v]) => [id, v.late])));
   }
 
   const defaultTab = TABS.find((t) => t === tab) ?? "assignments";
@@ -140,6 +143,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
         </Card>
       )}
 
+      <ClassSurveys classId={classId} teacher={isTeacher} />
       <Tabs defaultValue={defaultTab}>
         <TabsList className="h-11 w-full justify-start border-b bg-transparent p-0 sm:w-auto">
           <TabsTrigger value="assignments">과제 {assignments.length}</TabsTrigger>
