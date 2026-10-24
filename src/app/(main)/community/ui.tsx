@@ -46,17 +46,17 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
 // Tailwind 가 클래스를 찾을 수 있게 이름을 통째로 적어 둔다.
 const KIND_STYLE = {
   notice: {
-    soft: "bg-kind-notice-soft text-kind-notice",
+    soft: "border-kind-notice-bar/30 bg-kind-notice-soft text-kind-notice",
     bar: "border-l-kind-notice-bar",
     ring: "ring-kind-notice-bar",
   },
   question: {
-    soft: "bg-kind-question-soft text-kind-question",
+    soft: "border-kind-question-bar/30 bg-kind-question-soft text-kind-question",
     bar: "border-l-kind-question-bar",
     ring: "ring-kind-question-bar",
   },
   free: {
-    soft: "bg-kind-free-soft text-kind-free",
+    soft: "border-kind-free-bar/30 bg-kind-free-soft text-kind-free",
     bar: "border-l-kind-free-bar",
     ring: "ring-kind-free-bar",
   },
@@ -75,7 +75,7 @@ export function chipClass(active: boolean) {
 export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
   if (!kind) return chipClass(active);
   return cn(
-    "flex min-h-9 items-center rounded-full px-3.5 text-sm font-medium transition-[box-shadow,filter] hover:brightness-95",
+    "flex min-h-9 items-center rounded-full border px-3.5 text-sm font-medium transition-[box-shadow,filter] hover:brightness-95",
     KIND_STYLE[kind].soft,
     active && cn("font-bold ring-2", KIND_STYLE[kind].ring),
   );
@@ -83,7 +83,7 @@ export function kindChipClass(kind: Post["kind"] | "", active: boolean) {
 
 export function KindBadge({ kind }: { kind: Post["kind"] }) {
   return (
-    <Badge variant="outline" className={cn("border-transparent", KIND_STYLE[kind].soft)}>
+    <Badge variant="outline" className={KIND_STYLE[kind].soft}>
       {POST_KIND_LABEL[kind]}
     </Badge>
   );
@@ -139,7 +139,7 @@ export function PostRow({ post }: { post: RowPost }) {
       )}
     >
       <span
-        className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg", KIND_STYLE[post.kind].soft)}
+        className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border", KIND_STYLE[post.kind].soft)}
         aria-hidden="true"
       >
         {post.pinned ? <Pin className="size-4" /> : <MessageSquare className="size-4" />}
