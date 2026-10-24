@@ -80,6 +80,9 @@ export type Post = {
   status: ContentStatus;
   // 질문 글에서 글쓴이가 채택한 댓글. 있으면 "해결됨"이다.
   accepted_comment_id: string | null;
+  // 게시 중인 댓글 수와 마지막 활동(댓글 또는 작성) 시각. 정렬용이며 트리거가 맞춰 둔다.
+  comment_count: number;
+  last_activity_at: string;
   created_at: string;
   updated_at: string;
 };

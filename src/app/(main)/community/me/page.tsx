@@ -9,9 +9,10 @@ import type { Comment, Post, Role } from "@/lib/types";
 import { Pager } from "../pager";
 import { chipClass, CommunityHeader, EmptyState, PostRow, StatusBadge } from "../ui";
 
-type MyPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "status" | "created_at" | "accepted_comment_id"> & {
-  comments: { count: number }[];
-};
+type MyPost = Pick<
+  Post,
+  "id" | "kind" | "title" | "pinned" | "status" | "created_at" | "accepted_comment_id" | "comment_count"
+>;
 // 스크랩한 글. 숨겨지거나 삭제된 글은 posts 의 RLS 때문에 !inner 조인에서 빠진다.
 type MyBookmark = { created_at: string; post: MyPost & { author_name: string; author_role: Role } };
 type MyComment = Pick<Comment, "id" | "post_id" | "body" | "status" | "created_at"> & {
@@ -41,7 +42,7 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
       ? await supabase
           .from("bookmarks")
           .select(
-            "created_at, post:posts!inner(id, kind, title, pinned, status, created_at, accepted_comment_id, author_name, author_role, comments!comments_post_id_fkey(count))",
+            "created_at, post:posts!inner(id, kind, title, pinned, status, created_at, accepted_comment_id, comment_count, author_name, author_role)",
             { count: "exact" },
           )
           .order("created_at", { ascending: false })
@@ -50,7 +51,7 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
       : tab === "posts"
       ? await supabase
           .from("posts")
-          .select("id, kind, title, pinned, status, created_at, accepted_comment_id, comments!comments_post_id_fkey(count)", { count: "exact" })
+          .select("id, kind, title, pinned, status, created_at, accepted_comment_id, comment_count", { count: "exact" })
           .eq("author_id", profile.id)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })

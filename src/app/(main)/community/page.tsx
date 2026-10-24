@@ -14,10 +14,25 @@ import { CommunityHeader, EmptyState, kindChipClass, PostRow } from "./ui";
 
 type Row = Pick<
   Post,
-  "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "status" | "created_at" | "accepted_comment_id"
-> & {
-  comments: { count: number }[];
-};
+  | "id"
+  | "kind"
+  | "title"
+  | "author_name"
+  | "author_role"
+  | "pinned"
+  | "status"
+  | "created_at"
+  | "accepted_comment_id"
+  | "comment_count"
+>;
+
+// 정렬. 고정된 공지는 어떤 정렬에서도 맨 위에 둔다.
+const SORTS = [
+  { value: "latest", label: "최신순" },
+  { value: "comments", label: "댓글 많은 순" },
+  { value: "active", label: "최근 댓글순" },
+] as const;
+type Sort = (typeof SORTS)[number]["value"];
 
 const FILTERS = [
   { value: "", label: "전체" },
@@ -33,38 +48,47 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   const q = sanitizeSearch(String(searchParams.q ?? ""));
   // 질문 말머리에서만: 아직 채택된 답변이 없는 질문만 보기
   const openOnly = kind === "question" && searchParams.open === "1";
+  const sort: Sort = SORTS.find((s) => s.value === searchParams.sort)?.value ?? "latest";
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
 
   const profile = await getProfile();
   const supabase = await createClient();
 
-  // 게시 중인 글만 최신순으로. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
+  // 게시 중인 글만. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
   let query = supabase
     .from("posts")
-    .select("id, kind, title, author_name, author_role, pinned, status, created_at, accepted_comment_id, comments!comments_post_id_fkey(count)", { count: "exact" })
+    .select(
+      "id, kind, title, author_name, author_role, pinned, status, created_at, accepted_comment_id, comment_count",
+      { count: "exact" },
+    )
     .eq("status", "published");
   if (kind) query = query.eq("kind", kind);
   if (openOnly) query = query.is("accepted_comment_id", null);
   // 제목이나 본문에 검색어가 들어 있는 글 (대소문자 구분 없음)
   if (q) query = query.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
+  query = query.order("pinned", { ascending: false });
+  // 댓글 수·마지막 활동 시각은 DB 트리거가 글에 맞춰 둔 값이다. 같은 값이면 최신 글이 먼저.
+  if (sort === "comments") query = query.order("comment_count", { ascending: false });
+  if (sort === "active") query = query.order("last_activity_at", { ascending: false });
   const { data, count } = await query
-    .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .range(from, from + COMMUNITY_PAGE_SIZE - 1)
     .overrideTypes<Row[], { merge: false }>();
 
   const posts = data ?? [];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / COMMUNITY_PAGE_SIZE));
-  const href = (next: { kind?: string; q?: string; open?: boolean; page?: number }) => {
+  const href = (next: { kind?: string; q?: string; open?: boolean; sort?: Sort; page?: number }) => {
     const search = new URLSearchParams();
     const k = next.kind ?? kind;
     const keyword = next.q ?? q;
+    const s = next.sort ?? sort;
     // 말머리를 바꾸면 미해결 필터는 풀린다. (질문에서만 의미가 있다)
     const open = next.open ?? (next.kind === undefined && openOnly);
     if (k) search.set("kind", k);
     if (open && k === "question") search.set("open", "1");
     if (keyword) search.set("q", keyword);
+    if (s !== "latest") search.set("sort", s);
     if (next.page && next.page > 1) search.set("page", String(next.page));
     const text = search.toString();
     return text ? `/community?${text}` : "/community";
@@ -113,6 +137,8 @@ export default async function CommunityPage(props: PageProps<"/community">) {
           </h3>
           <form action="/community" role="search" className="flex w-full gap-2 sm:w-auto">
             {kind && <input type="hidden" name="kind" value={kind} />}
+            {openOnly && <input type="hidden" name="open" value="1" />}
+            {sort !== "latest" && <input type="hidden" name="sort" value={sort} />}
             <Input
               name="q"
               defaultValue={q}
@@ -148,11 +174,26 @@ export default async function CommunityPage(props: PageProps<"/community">) {
               미해결만 보기
             </Link>
           )}
-          {q && (
-            <Link href={href({ q: "" })} className="ml-auto text-xs text-muted-foreground hover:text-primary">
-              검색 초기화
-            </Link>
-          )}
+          <nav className="ml-auto flex items-center gap-1 text-xs" aria-label="정렬">
+            {q && (
+              <Link href={href({ q: "" })} className="mr-2 text-muted-foreground hover:text-primary">
+                검색 초기화
+              </Link>
+            )}
+            {SORTS.map((s) => (
+              <Link
+                key={s.value}
+                href={href({ sort: s.value })}
+                aria-current={sort === s.value ? "true" : undefined}
+                className={cn(
+                  "flex min-h-8 items-center rounded-md px-2.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+                  sort === s.value && "bg-accent font-semibold text-primary hover:bg-accent hover:text-primary",
+                )}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         {posts.length === 0 ? (

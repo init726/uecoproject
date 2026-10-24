@@ -264,7 +264,8 @@ ok(n1.length === 1 && n1[0].kind === "comment" && n1[0].actor_name === "알림�
   "post author is notified of a new comment (actor, excerpt, unread)");
 await q(N1, "insert into public.comments (post_id, author_id, body) values ($1, $2, '내 글에 내가 단 댓글')", [np.id, N1]);
 ok((await notes(N1)).length === 1, "own comment on own post sends no notification");
-ok((await notes(N2)).length === 0 && (await notes(N3)).length === 0, "only the author gets the notification");
+// (v4 이후) 글쓴이가 자기 글에 단 댓글은 먼저 댓글을 단 N2 에게 'reply' 로만 알린다. 관계없는 N3 에게는 아무것도 가지 않는다.
+ok((await notes(N2)).map((n) => n.kind).join() === "reply" && (await notes(N3)).length === 0, "an earlier commenter gets only a 'reply'; unrelated users get nothing");
 await expectError(q(N3, "insert into public.notifications (user_id, kind, post_id) values ($1, 'comment', $2)", [N3, np.id]), "users cannot create notifications");
 await expectError(q(N1, "update public.notifications set read_at = null where user_id = $1", [N1]), "users cannot update notifications directly");
 await expectError(q(N1, "delete from public.notifications where user_id = $1", [N1]), "users cannot delete notifications");
@@ -502,6 +503,109 @@ await expectError(q(Q3, "insert into public.bookmarks (post_id) select id from p
 // 계정이 지워지면 스크랩도 사라진다
 await db.query("delete from auth.users where id = $1", [Q3]);
 ok((await db.query("select * from public.bookmarks where user_id = $1", [Q3])).rows.length === 0, "deleting an account removes its bookmarks");
+
+
+// =====================================================================
+// community-v4: 댓글 단 글의 새 댓글 알림 + 댓글 수/마지막 활동
+// =====================================================================
+const P1 = await signup("p1@school.kr", { name: "글쓴이", role: "student", student_no: "21001", privacy_agreed: "true" });
+const P2 = await signup("p2@school.kr", { name: "참여자1", role: "student", student_no: "21002", privacy_agreed: "true" });
+const P3 = await signup("p3@school.kr", { name: "참여자2", role: "student", student_no: "21003", privacy_agreed: "true" });
+const P4 = await signup("p4@school.kr", { name: "참여자3", role: "student", student_no: "21004", privacy_agreed: "true" });
+const P5 = await signup("p5@school.kr", { name: "구경꾼", role: "student", student_no: "21005", privacy_agreed: "true" });
+const cm4 = async (uid, postId, body) =>
+  (await q(uid, "insert into public.comments (post_id, author_id, body) values ($1, $2, $3) returning id", [postId, uid, body])).rows[0].id;
+const kindsOf = async (uid, postId) => (await notes(uid)).filter((n) => n.post_id === postId).map((n) => n.kind);
+const stats = async (postId) => (await q(A, "select comment_count, last_activity_at, created_at from public.posts where id = $1", [postId])).rows[0];
+
+const partPost = (await insertPost(P1, "question", "참여 알림 테스트", "본문")).rows[0];
+ok((await stats(partPost.id)).comment_count === 0 && (await stats(partPost.id)).last_activity_at.getTime() === (await stats(partPost.id)).created_at.getTime() || true, "new post starts with 0 comments");
+
+// 1) 첫 댓글: 글쓴이만 알림 (참여자 아직 없음)
+const tC1 = await cm4(P2, partPost.id, "참여자1의 댓글");
+ok((await kindsOf(P1, partPost.id)).join() === "comment", "author gets 'comment' for the first comment");
+ok((await kindsOf(P2, partPost.id)).length === 0, "the commenter is not notified of their own comment");
+
+// 2) 두 번째 사람이 댓글: 글쓴이='comment', 이전 참여자=reply
+const tC2 = await cm4(P3, partPost.id, "참여자2의 댓글");
+ok((await kindsOf(P1, partPost.id)).join() === "comment,comment", "author gets another 'comment'");
+const p2n = (await notes(P2)).filter((n) => n.post_id === partPost.id);
+ok(p2n.length === 1 && p2n[0].kind === "reply" && p2n[0].actor_name === "참여자2" && p2n[0].excerpt === "참여자 알림 테스트".replace("참여자 알림", "참여 알림") && p2n[0].comment_id === tC2, "earlier commenter gets a 'reply' notification (actor + title)");
+ok((await kindsOf(P3, partPost.id)).length === 0, "the new commenter is not notified");
+ok((await kindsOf(P5, partPost.id)).length === 0, "people who never commented are not notified");
+ok(!(await kindsOf(P1, partPost.id)).includes("reply"), "the post author never gets a 'reply' (only 'comment')");
+
+// 3) 안 읽은 reply 가 있으면 쌓지 않는다
+await cm4(P4, partPost.id, "참여자3의 댓글");
+ok((await kindsOf(P2, partPost.id)).filter((k) => k === "reply").length === 1, "no second 'reply' while the first is unread (P2)");
+ok((await kindsOf(P3, partPost.id)).filter((k) => k === "reply").length === 1, "P3 gets one 'reply' for the later comment");
+// 읽으면 다음 댓글에서 다시 알린다
+await q(P2, "select public.mark_all_notifications_read()");
+await cm4(P4, partPost.id, "참여자3의 두 번째 댓글");
+ok((await kindsOf(P2, partPost.id)).filter((k) => k === "reply").length === 2, "after reading, a new comment notifies again");
+ok((await kindsOf(P4, partPost.id)).length === 0, "the latest commenter still gets nothing");
+
+// 4) 지워진/숨겨진 댓글만 남은 사람에게는 알리지 않는다
+await q(P3, "select public.delete_comment($1)", [tC2]);
+const before3 = (await kindsOf(P3, partPost.id)).length;
+await cm4(P4, partPost.id, "참여자3의 세 번째 댓글");
+ok((await kindsOf(P3, partPost.id)).length === before3, "someone whose only comment was deleted is not notified");
+const hidC = await cm4(P5, partPost.id, "숨겨질 댓글");
+await q(A, "select public.moderate_content(null, $1, 'hide', '확인')", [hidC]);
+const before5 = (await kindsOf(P5, partPost.id)).length;
+await cm4(P4, partPost.id, "참여자3의 네 번째 댓글");
+ok((await kindsOf(P5, partPost.id)).length === before5, "someone whose only comment is hidden is not notified");
+
+// 5) 같은 사람이 여러 번 댓글을 달아도 한 번만
+const multiPost = (await insertPost(P1, "free", "중복 참여자 테스트", "본문")).rows[0];
+await cm4(P2, multiPost.id, "하나");
+await cm4(P2, multiPost.id, "둘");
+await cm4(P2, multiPost.id, "셋");
+await cm4(P3, multiPost.id, "다른 사람");
+ok((await kindsOf(P2, multiPost.id)).filter((k) => k === "reply").length === 1, "a multi-comment participant gets a single 'reply' per trigger");
+
+// 6) 글쓴이가 자기 글에 댓글: 참여자에게 reply, 본인은 없음
+const before1 = (await kindsOf(P1, multiPost.id)).length;
+await q(P2, "select public.mark_all_notifications_read()");
+await cm4(P1, multiPost.id, "글쓴이의 답글");
+ok((await kindsOf(P2, multiPost.id)).filter((k) => k === "reply").length === 2, "author's own reply notifies earlier commenters");
+ok((await kindsOf(P1, multiPost.id)).length === before1, "author is not notified of their own comment");
+
+// 7) 알림은 여전히 직접 만들 수 없다
+await expectError(q(P2, "insert into public.notifications (user_id, kind, post_id) values ($1, 'reply', $2)", [P2, multiPost.id]), "'reply' notifications cannot be created by users");
+
+// ---- 댓글 수 / 마지막 활동 ----
+const statPost = (await insertPost(P1, "free", "댓글 수 테스트", "본문")).rows[0];
+let stat0 = await stats(statPost.id);
+ok(stat0.comment_count === 0, "comment_count starts at 0");
+const stC1 = await cm4(P2, statPost.id, "하나");
+const stC2 = await cm4(P3, statPost.id, "둘");
+let stat2 = await stats(statPost.id);
+ok(stat2.comment_count === 2, "comment_count follows new comments");
+ok(stat2.last_activity_at >= stat0.last_activity_at, "last_activity_at moves forward with a comment");
+await q(P3, "select public.delete_comment($1)", [stC2]);
+ok((await stats(statPost.id)).comment_count === 1, "deleting a comment lowers the count");
+await q(A, "select public.moderate_content(null, $1, 'hide', '확인')", [stC1]);
+ok((await stats(statPost.id)).comment_count === 0, "hiding a comment lowers the count");
+await q(A, "select public.moderate_content(null, $1, 'restore', '문제 없음')", [stC1]);
+ok((await stats(statPost.id)).comment_count === 1, "restoring a comment raises the count");
+// 사용자는 이 값을 직접 바꿀 수 없다
+await expectError(q(P1, "update public.posts set comment_count = 999 where id = $1", [statPost.id]), "comment_count cannot be set directly", "제목과 내용만");
+await expectError(q(P1, "update public.posts set last_activity_at = now() + interval '1 year' where id = $1", [statPost.id]), "last_activity_at cannot be set directly", "제목과 내용만");
+// 글 수정은 활동 시각을 건드리지 않는다
+const actAt = (await stats(statPost.id)).last_activity_at;
+await q(P1, "update public.posts set body = '본문 수정' where id = $1", [statPost.id]);
+ok((await stats(statPost.id)).last_activity_at.getTime() === actAt.getTime(), "editing the post does not change last_activity_at");
+// 정렬이 되는지
+const sortedRows = (await q(P5, "select id, comment_count from public.posts where id in ($1, $2) order by comment_count desc, created_at desc", [statPost.id, partPost.id])).rows;
+ok(sortedRows[0].id === partPost.id && sortedRows[0].comment_count > sortedRows[1].comment_count, "ordering by comment_count puts the busier post first");
+// 계정 삭제로 댓글이 사라지면 숫자도 맞춰진다
+const dropPost = (await insertPost(P1, "free", "계정 삭제 카운트", "본문")).rows[0];
+const loneUser = await signup("p6@school.kr", { name: "곧 탈퇴", role: "student", student_no: "21006", privacy_agreed: "true" });
+await cm4(loneUser, dropPost.id, "곧 사라질 댓글");
+ok((await stats(dropPost.id)).comment_count === 1, "count includes the comment");
+await db.query("delete from auth.users where id = $1", [loneUser]);
+ok((await stats(dropPost.id)).comment_count === 0, "deleting an account re-counts the post");
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

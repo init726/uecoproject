@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, CircleCheck, EyeOff, MessageSquare, RotateCcw, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, CircleCheck, EyeOff, MessageSquare, Reply, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { CommunityHeader, EmptyState } from "../ui";
 
 type Notification = {
   id: string;
-  kind: "comment" | "hidden" | "restored" | "deleted" | "accepted";
+  kind: "comment" | "hidden" | "restored" | "deleted" | "accepted" | "reply";
   target_type: "post" | "comment";
   actor_name: string | null;
   excerpt: string | null;
@@ -27,6 +27,7 @@ const ICON = {
   restored: RotateCcw,
   deleted: Trash2,
   accepted: CircleCheck,
+  reply: Reply,
 } as const;
 
 function message(n: Notification) {
@@ -41,6 +42,8 @@ function message(n: Notification) {
       return `${text} ${what}의 검토가 끝나 다시 게시되었습니다.`;
     case "deleted":
       return `${text} ${what}이 관리자에 의해 삭제되었습니다.`;
+    case "reply":
+      return `내가 댓글을 단 ${text} 글에 ${n.actor_name ?? "누군가"}님이 새 댓글을 남겼습니다.`;
     case "accepted":
       return `${n.actor_name ?? "질문자"}님이 ${text} 질문에서 내 댓글을 채택했습니다.`;
   }

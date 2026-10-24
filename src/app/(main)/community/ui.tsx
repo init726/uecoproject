@@ -118,8 +118,14 @@ type RowPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "created_at" | "s
   accepted_comment_id?: string | null;
   author_name?: string;
   author_role?: Role;
-  comments: { count: number }[];
+  comment_count: number;
 };
+
+// 24시간 안에 올라온 글인지 (NEW 배지). 현재 시각을 읽는 부분을 함수로 떼어 두었다.
+const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+function isRecent(iso: string) {
+  return Date.now() - new Date(iso).getTime() < NEW_WINDOW_MS;
+}
 
 // 목록의 글 한 줄. 작성자 정보가 있으면 보여준다. (내 글 목록에는 필요 없다)
 export function PostRow({ post }: { post: RowPost }) {
@@ -143,6 +149,11 @@ export function PostRow({ post }: { post: RowPost }) {
           <KindBadge kind={post.kind} />
           {post.kind === "question" && post.accepted_comment_id && <SolvedBadge />}
           <StatusBadge status={post.status} />
+          {isRecent(post.created_at) && (
+            <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[10px] leading-none font-bold text-primary-foreground">
+              NEW
+            </span>
+          )}
         </div>
         <p className="mt-1 text-sm font-semibold wrap-break-word group-hover:text-primary">{post.title}</p>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
@@ -156,7 +167,7 @@ export function PostRow({ post }: { post: RowPost }) {
       <span className="mt-1 flex shrink-0 items-center gap-1 rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-primary">
         <MessageSquare className="size-3" aria-hidden="true" />
         <span className="sr-only">댓글</span>
-        {post.comments[0]?.count ?? 0}
+        {post.comment_count}
       </span>
     </Link>
   );
