@@ -1,6 +1,8 @@
+import { Flag, History } from "lucide-react";
 import Link from "next/link";
+import { CommunityHeader, EmptyState } from "@/app/(main)/community/ui";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
 import { CONTENT_STATUS_LABEL, ROLE_LABEL } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
@@ -144,45 +146,53 @@ export default async function AdminCommunityPage() {
   const watching = items.filter((i) => i.status === "published");
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h2 className="font-mono text-xl font-bold">커뮤니티 신고 관리</h2>
-        <Link href="/community" className="text-sm text-primary hover:underline">
-          커뮤니티 보기 →
-        </Link>
-      </div>
+    <div className="flex flex-col gap-6">
+      <CommunityHeader
+        eyebrow="학교 관리 공간"
+        title="커뮤니티 신고 관리"
+        description="신고된 글과 댓글을 확인하고 복구하거나 삭제합니다. 처리 내용은 이력으로 남습니다."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/community">커뮤니티 보기</Link>
+          </Button>
+        }
+      />
 
-      <Section title={`검토 대기 ${waiting.length}`} hint="숨겨진 글·댓글이에요. 내용을 확인하고 복구하거나 삭제하세요.">
-        {waiting.map((item) => (
-          <ItemCard key={item.key} item={item} />
-        ))}
-      </Section>
+      <QueuePanel
+        title="검토 대기"
+        hint="숨겨진 글과 댓글입니다. 내용을 확인하고 복구하거나 삭제하세요."
+        empty="검토를 기다리는 항목이 없습니다."
+        items={waiting}
+      />
+      <QueuePanel
+        title="신고 접수 중"
+        hint="아직 게시 중입니다. 서로 다른 사용자 3명이 신고하면 자동으로 숨겨집니다."
+        empty="신고가 접수된 게시 중인 항목이 없습니다."
+        items={watching}
+      />
 
-      <Section title={`신고 접수 중 ${watching.length}`} hint="아직 게시 중이에요. 서로 다른 사용자 3명이 신고하면 자동으로 숨겨져요.">
-        {watching.map((item) => (
-          <ItemCard key={item.key} item={item} />
-        ))}
-      </Section>
-
-      <section className="flex flex-col gap-3">
-        <h3 className="font-semibold">처리 이력</h3>
+      <section className="school-panel">
+        <div className="school-panel-heading">
+          <h3 className="school-panel-title">
+            <History className="size-[18px] text-primary" aria-hidden="true" />
+            처리 이력
+            <span className="text-sm font-normal text-muted-foreground">최근 30건</span>
+          </h3>
+        </div>
         {(logRows ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">아직 처리 기록이 없어요.</p>
+          <EmptyState title="아직 처리 기록이 없습니다." detail="자동 숨김과 관리자 처리 내용이 이곳에 쌓입니다." />
         ) : (
-          <ul className="flex flex-col divide-y rounded-lg border text-sm">
+          <ul className="divide-y">
             {(logRows ?? []).map((log) => (
-              <li key={log.id} className="flex flex-col gap-0.5 px-3 py-2">
-                <p className="flex flex-wrap items-center gap-2">
-                  <Badge variant={log.action === "delete" ? "destructive" : "secondary"}>
-                    {ACTION_LABEL[log.action]}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {log.target_type === "post" ? "글" : "댓글"} · {log.actor?.name ?? "시스템"} ·{" "}
-                    {formatDateTime(log.created_at)}
-                  </span>
+              <li key={log.id} className="px-4 py-3 sm:px-5">
+                <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant={log.action === "delete" ? "destructive" : "secondary"}>{ACTION_LABEL[log.action]}</Badge>
+                  <span>{log.target_type === "post" ? "글" : "댓글"}</span>
+                  <span>{log.actor?.name ?? "시스템"}</span>
+                  <span>{formatDateTime(log.created_at)}</span>
                 </p>
-                {log.target_excerpt && <p className="truncate">{log.target_excerpt}</p>}
-                <p className="text-xs text-muted-foreground">사유: {log.reason}</p>
+                {log.target_excerpt && <p className="mt-1 text-sm wrap-break-word">{log.target_excerpt}</p>}
+                <p className="mt-0.5 text-xs text-muted-foreground">사유: {log.reason}</p>
               </li>
             ))}
           </ul>
@@ -192,57 +202,65 @@ export default async function AdminCommunityPage() {
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint: string; children: React.ReactNode[] }) {
+function QueuePanel({ title, hint, empty, items }: { title: string; hint: string; empty: string; items: Item[] }) {
   return (
-    <section className="flex flex-col gap-3">
-      <div>
-        <h3 className="font-semibold">{title}</h3>
+    <section className="school-panel">
+      <div className="school-panel-heading">
+        <h3 className="school-panel-title">
+          <Flag className="size-[18px] text-primary" aria-hidden="true" />
+          {title}
+          <span className="text-sm font-normal text-muted-foreground">{items.length}</span>
+        </h3>
         <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
-      {children.length === 0 ? <p className="text-sm text-muted-foreground">없어요.</p> : children}
+      {items.length === 0 ? (
+        <EmptyState title={empty} detail="새 신고가 들어오면 이곳에 표시됩니다." />
+      ) : (
+        <ul className="divide-y">
+          {items.map((item) => (
+            <ItemRow key={item.key} item={item} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
-function ItemCard({ item }: { item: Item }) {
+function ItemRow({ item }: { item: Item }) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant={item.status === "review" ? "destructive" : "secondary"}>
-            {CONTENT_STATUS_LABEL[item.status]}
-          </Badge>
-          <span>{item.type === "post" ? "글" : "댓글"}</span>
-          <span>
-            {item.author} · {ROLE_LABEL[item.role]} · {formatDateTime(item.createdAt)}
-          </span>
-          <Link href={`/community/${item.postId}`} className="ml-auto text-primary hover:underline">
-            원문 보기 →
-          </Link>
-        </div>
+    <li className="flex flex-col gap-3 px-4 py-4 sm:px-5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <Badge variant={item.status === "review" ? "destructive" : "secondary"}>{CONTENT_STATUS_LABEL[item.status]}</Badge>
+        <span>{item.type === "post" ? "글" : "댓글"}</span>
+        <span className="font-medium text-foreground">{item.author}</span>
+        <span>{ROLE_LABEL[item.role]}</span>
+        <span>{formatDateTime(item.createdAt)}</span>
+        <Link href={`/community/${item.postId}`} className="ml-auto font-medium text-primary hover:underline">
+          원문 보기
+        </Link>
+      </div>
 
-        {item.title && <p className="font-medium break-words">{item.title}</p>}
-        <p className="text-sm break-words whitespace-pre-wrap">{item.body}</p>
+      {item.title && <p className="text-sm font-semibold wrap-break-word">{item.title}</p>}
+      <p className="text-sm wrap-break-word whitespace-pre-wrap">{item.body}</p>
 
-        <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3 text-xs">
-          <p className="font-medium">신고 {item.reports.length}건</p>
-          {item.reports.length === 0 && <p className="text-muted-foreground">관리자가 직접 숨긴 항목이에요.</p>}
-          {item.reports.map((report, i) => (
-            <p key={i} className="text-muted-foreground">
-              · {report.reason}
-              <span className="ml-1 opacity-70">
-                ({report.reporter?.name ?? "알 수 없음"}, {formatDateTime(report.created_at)})
-              </span>
-            </p>
-          ))}
-        </div>
+      <div className="flex flex-col gap-1 rounded-lg border bg-muted/20 p-3 text-xs">
+        <p className="font-semibold text-school-navy">신고 {item.reports.length}건</p>
+        {item.reports.length === 0 && <p className="text-muted-foreground">관리자가 직접 숨긴 항목입니다.</p>}
+        {item.reports.map((report, i) => (
+          <p key={i} className="text-muted-foreground">
+            {report.reason}
+            <span className="ml-1">
+              ({report.reporter?.name ?? "알 수 없음"}, {formatDateTime(report.created_at)})
+            </span>
+          </p>
+        ))}
+      </div>
 
-        <ModerationForm
-          postId={item.type === "post" ? item.id : undefined}
-          commentId={item.type === "comment" ? item.id : undefined}
-          status={item.status}
-        />
-      </CardContent>
-    </Card>
+      <ModerationForm
+        postId={item.type === "post" ? item.id : undefined}
+        commentId={item.type === "comment" ? item.id : undefined}
+        status={item.status}
+      />
+    </li>
   );
 }

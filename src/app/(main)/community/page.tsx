@@ -1,19 +1,16 @@
-import { MessageSquare, Pin, Search } from "lucide-react";
+import { MessagesSquare, Search, UserRound } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getProfile } from "@/lib/auth";
 import { sanitizeSearch, writableKinds } from "@/lib/community";
-import { COMMUNITY_PAGE_SIZE, POST_KIND_LABEL, ROLE_LABEL } from "@/lib/constants";
-import { formatDateTime } from "@/lib/format";
+import { COMMUNITY_PAGE_SIZE, POST_KIND_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { Pager } from "./pager";
+import { chipClass, CommunityHeader, EmptyState, PostRow } from "./ui";
 
-type Row = Pick<Post, "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "created_at"> & {
+type Row = Pick<Post, "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "status" | "created_at"> & {
   comments: { count: number }[];
 };
 
@@ -37,7 +34,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   // 게시 중인 글만 최신순으로. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
   let query = supabase
     .from("posts")
-    .select("id, kind, title, author_name, author_role, pinned, created_at, comments(count)", { count: "exact" })
+    .select("id, kind, title, author_name, author_role, pinned, status, created_at, comments(count)", { count: "exact" })
     .eq("status", "published");
   if (kind) query = query.eq("kind", kind);
   // 제목이나 본문에 검색어가 들어 있는 글 (대소문자 구분 없음)
@@ -64,91 +61,76 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   const canWrite = writableKinds(profile).length > 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">커뮤니티</h2>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href="/community/me">내 활동</Link>
-          </Button>
-          {canWrite && (
-            <Button asChild>
-              <Link href="/community/new">{profile.role === "admin" ? "공지 쓰기" : "글쓰기"}</Link>
+    <div className="flex flex-col gap-6">
+      <CommunityHeader
+        title="커뮤니티"
+        description="학교 공지를 확인하고, 학생과 선생님이 함께 질문하고 이야기하는 공간입니다."
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/community/me">
+                <UserRound aria-hidden="true" />내 활동
+              </Link>
             </Button>
+            {canWrite && (
+              <Button asChild size="sm">
+                <Link href="/community/new">{profile.role === "admin" ? "공지 쓰기" : "글쓰기"}</Link>
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <section className="school-panel">
+        <div className="school-panel-heading">
+          <h3 className="school-panel-title">
+            <MessagesSquare className="size-[18px] text-primary" aria-hidden="true" />
+            {q ? "검색 결과" : "최근 글"}
+            <span className="text-sm font-normal text-muted-foreground">{count ?? 0}</span>
+          </h3>
+          <form action="/community" role="search" className="flex w-full gap-2 sm:w-auto">
+            {kind && <input type="hidden" name="kind" value={kind} />}
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder="제목이나 내용으로 검색"
+              maxLength={50}
+              aria-label="글 검색"
+              className="sm:w-64"
+            />
+            <Button type="submit" variant="outline" size="sm" className="h-10">
+              <Search aria-hidden="true" />
+              검색
+            </Button>
+          </form>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1 border-b px-3 py-2 sm:px-4">
+          {FILTERS.map((f) => (
+            <Link key={f.value} href={href({ kind: f.value })} className={chipClass(kind === f.value)}>
+              {f.label}
+            </Link>
+          ))}
+          {q && (
+            <Link href={href({ q: "" })} className="ml-auto text-xs text-muted-foreground hover:text-primary">
+              검색 초기화
+            </Link>
           )}
         </div>
-      </div>
 
-      <form action="/community" className="flex gap-2">
-        {kind && <input type="hidden" name="kind" value={kind} />}
-        <Input name="q" defaultValue={q} placeholder="제목이나 내용으로 검색" maxLength={50} />
-        <Button type="submit" variant="outline">
-          <Search className="size-4" />
-          검색
-        </Button>
-        {q && (
-          <Button asChild variant="ghost">
-            <Link href={href({ q: "" })}>초기화</Link>
-          </Button>
+        {posts.length === 0 ? (
+          <EmptyState
+            title={q ? `'${q}' 검색 결과가 없습니다.` : kind ? "이 말머리에는 아직 글이 없습니다." : "아직 글이 없습니다."}
+            detail={q ? "다른 검색어로 다시 찾아보세요." : "첫 글을 남겨 보세요."}
+          />
+        ) : (
+          <div className="divide-y">
+            {posts.map((post) => (
+              <PostRow key={post.id} post={post} />
+            ))}
+          </div>
         )}
-      </form>
-
-      <div className="flex flex-wrap gap-1">
-        {FILTERS.map((f) => (
-          <Link
-            key={f.value}
-            href={href({ kind: f.value })}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent",
-              kind === f.value && "bg-primary text-primary-foreground hover:bg-primary",
-            )}
-          >
-            {f.label}
-          </Link>
-        ))}
-      </div>
-
-      {posts.length === 0 ? (
-        <Card>
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            {q
-              ? `'${q}' 검색 결과가 없어요.`
-              : kind
-                ? "이 말머리에는 아직 글이 없어요."
-                : "아직 글이 없어요. 첫 글을 남겨 보세요!"}
-          </p>
-        </Card>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {posts.map((post) => (
-            <li key={post.id}>
-              <Link href={`/community/${post.id}`}>
-                <Card size="sm" className={cn("hover:bg-accent/50", post.pinned && "bg-accent/40")}>
-                  <div className="flex flex-col gap-1.5 px-3">
-                    <div className="flex items-center gap-2">
-                      {post.pinned && <Pin className="size-3.5 shrink-0 text-primary" />}
-                      <Badge variant={post.kind === "notice" ? "default" : "secondary"}>
-                        {POST_KIND_LABEL[post.kind]}
-                      </Badge>
-                      <span className="truncate font-medium">{post.title}</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                      <span>
-                        {post.author_name} · {ROLE_LABEL[post.author_role]}
-                      </span>
-                      <span>{formatDateTime(post.created_at)}</span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="size-3" />
-                        {post.comments[0]?.count ?? 0}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      </section>
 
       <Pager page={page} totalPages={totalPages} href={(p) => href({ page: p })} />
     </div>

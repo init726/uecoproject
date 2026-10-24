@@ -30,13 +30,13 @@ export function PostForm({
       {kinds && (
         <div className="flex flex-col gap-2">
           <Label>말머리</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {kinds.map((kind, i) => (
               <label
                 key={kind}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-accent"
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border bg-card px-4 text-sm transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-accent has-checked:font-semibold has-checked:text-primary"
               >
-                <input type="radio" name="kind" value={kind} defaultChecked={i === 0} />
+                <input type="radio" name="kind" value={kind} defaultChecked={i === 0} className="accent-primary" />
                 {POST_KIND_LABEL[kind]}
               </label>
             ))}
@@ -44,8 +44,8 @@ export function PostForm({
         </div>
       )}
       {kinds?.includes("notice") && (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="pinned" /> 목록 맨 위에 고정
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" name="pinned" className="size-4 accent-primary" /> 목록 맨 위에 고정
         </label>
       )}
       <div className="flex flex-col gap-2">

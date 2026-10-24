@@ -3,6 +3,7 @@ import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { updatePost } from "../../actions";
 import { PostForm } from "../../post-form";
+import { CommunityHeader } from "../../ui";
 
 export default async function EditPostPage(props: PageProps<"/community/[postId]/edit">) {
   const { postId } = await props.params;
@@ -18,13 +19,17 @@ export default async function EditPostPage(props: PageProps<"/community/[postId]
   if (!post || post.author_id !== profile.id || post.status !== "published") notFound();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h2 className="text-xl font-bold">글 수정</h2>
-      <PostForm
-        action={updatePost.bind(null, postId)}
-        initial={{ title: post.title, body: post.body }}
-        submitLabel="수정하기"
-      />
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <CommunityHeader title="글 수정" description="제목과 내용을 고칠 수 있습니다." />
+      <section className="school-panel">
+        <div className="px-4 py-4 sm:px-5 sm:py-5">
+          <PostForm
+            action={updatePost.bind(null, postId)}
+            initial={{ title: post.title, body: post.body }}
+            submitLabel="수정하기"
+          />
+        </div>
+      </section>
     </div>
   );
 }

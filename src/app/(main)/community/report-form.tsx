@@ -24,12 +24,12 @@ export function ReportForm({
   );
 
   return (
-    <details className="text-sm">
-      <summary className="flex w-fit cursor-pointer list-none items-center gap-1 text-muted-foreground hover:text-destructive">
-        <Flag className="size-3.5" />
+    <details className="text-sm [&[open]>summary]:text-destructive">
+      <summary className="flex min-h-9 w-fit cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground hover:bg-muted hover:text-destructive">
+        <Flag className="size-3.5" aria-hidden="true" />
         신고
       </summary>
-      <form action={formAction} className="mt-2 flex flex-col gap-2 rounded-lg border bg-background p-3">
+      <form action={formAction} className="mt-2 flex flex-col gap-2 rounded-lg border bg-muted/20 p-3">
         <Textarea name="reason" rows={2} maxLength={REASON_MAX} placeholder="신고 사유를 적어 주세요" required />
         <FormMessage state={state} />
         <Button type="submit" size="sm" variant="destructive" className="self-end" disabled={pending}>

@@ -1,16 +1,17 @@
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
-import { COMMUNITY_PAGE_SIZE, CONTENT_STATUS_LABEL, POST_KIND_LABEL } from "@/lib/constants";
+import { COMMUNITY_PAGE_SIZE } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Comment, Post } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { Pager } from "../pager";
+import { chipClass, CommunityHeader, EmptyState, PostRow, StatusBadge } from "../ui";
 
-type MyPost = Pick<Post, "id" | "kind" | "title" | "status" | "created_at"> & { comments: { count: number }[] };
+type MyPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "status" | "created_at"> & {
+  comments: { count: number }[];
+};
 type MyComment = Pick<Comment, "id" | "post_id" | "body" | "status" | "created_at"> & {
   post: { title: string } | null;
 };
@@ -36,7 +37,7 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
     tab === "posts"
       ? await supabase
           .from("posts")
-          .select("id, kind, title, status, created_at, comments(count)", { count: "exact" })
+          .select("id, kind, title, pinned, status, created_at, comments(count)", { count: "exact" })
           .eq("author_id", profile.id)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })
@@ -57,85 +58,63 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
     `/community/me?tab=${nextTab}${nextPage > 1 ? `&page=${nextPage}` : ""}`;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">내 활동</h2>
-        <Link href="/community" className="text-sm text-primary hover:underline">
-          ← 커뮤니티
-        </Link>
-      </div>
+    <div className="flex flex-col gap-6">
+      <CommunityHeader
+        title="내 활동"
+        description="내가 쓴 글과 댓글을 모아 봅니다."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/community">커뮤니티로</Link>
+          </Button>
+        }
+      />
 
-      <div className="flex gap-1">
-        {TABS.map((t) => (
-          <Link
-            key={t.value}
-            href={href(t.value)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent",
-              tab === t.value && "bg-primary text-primary-foreground hover:bg-primary",
-            )}
-          >
-            {t.label}
-          </Link>
-        ))}
-        <span className="ml-auto self-center text-xs text-muted-foreground">총 {mine.count ?? 0}개</span>
-      </div>
+      <section className="school-panel">
+        <div className="flex flex-wrap items-center gap-1 border-b px-3 py-2 sm:px-4">
+          {TABS.map((t) => (
+            <Link key={t.value} href={href(t.value)} className={chipClass(tab === t.value)}>
+              {t.label}
+            </Link>
+          ))}
+          <span className="ml-auto text-xs text-muted-foreground">총 {mine.count ?? 0}개</span>
+        </div>
 
-      {rows.length === 0 ? (
-        <Card>
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            {tab === "posts" ? "아직 쓴 글이 없어요." : "아직 쓴 댓글이 없어요."}
-          </p>
-        </Card>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {tab === "posts"
-            ? (rows as MyPost[]).map((post) => (
-                <li key={post.id}>
-                  <Link href={`/community/${post.id}`}>
-                    <Card size="sm" className="hover:bg-accent/50">
-                      <div className="flex flex-col gap-1.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={post.kind === "notice" ? "default" : "secondary"}>
-                            {POST_KIND_LABEL[post.kind]}
-                          </Badge>
-                          {post.status !== "published" && (
-                            <Badge variant="destructive">{CONTENT_STATUS_LABEL[post.status]}</Badge>
-                          )}
-                          <span className="truncate font-medium">{post.title}</span>
-                        </div>
-                        <div className="flex items-center gap-x-2 text-xs text-muted-foreground">
-                          <span>{formatDateTime(post.created_at)}</span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="size-3" />
-                            {post.comments[0]?.count ?? 0}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
+        {rows.length === 0 ? (
+          <EmptyState
+            title={tab === "posts" ? "아직 쓴 글이 없습니다." : "아직 쓴 댓글이 없습니다."}
+            detail={tab === "posts" ? "커뮤니티에 첫 글을 남겨 보세요." : "다른 사람의 글에 댓글을 남겨 보세요."}
+          />
+        ) : (
+          <div className="divide-y">
+            {tab === "posts"
+              ? (rows as MyPost[]).map((post) => <PostRow key={post.id} post={post} />)
+              : (rows as MyComment[]).map((comment) => (
+                  <Link
+                    key={comment.id}
+                    href={`/community/${comment.post_id}`}
+                    className="group flex min-w-0 items-start gap-3 p-4 transition-colors hover:bg-accent/40 sm:px-5"
+                  >
+                    <span
+                      className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-primary"
+                      aria-hidden="true"
+                    >
+                      <MessageSquare className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">{comment.post?.title ?? "볼 수 없는 글"}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm font-semibold wrap-break-word group-hover:text-primary">
+                        {comment.body}
+                      </p>
+                      <p className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <StatusBadge status={comment.status} />
+                        {formatDateTime(comment.created_at)}
+                      </p>
+                    </div>
                   </Link>
-                </li>
-              ))
-            : (rows as MyComment[]).map((comment) => (
-                <li key={comment.id}>
-                  <Link href={`/community/${comment.post_id}`}>
-                    <Card size="sm" className="hover:bg-accent/50">
-                      <div className="flex flex-col gap-1.5 px-3">
-                        <p className="line-clamp-2 text-sm break-words">{comment.body}</p>
-                        <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                          {comment.status !== "published" && (
-                            <Badge variant="destructive">{CONTENT_STATUS_LABEL[comment.status]}</Badge>
-                          )}
-                          <span className="truncate">{comment.post?.title ?? "(볼 수 없는 글)"}</span>
-                          <span>{formatDateTime(comment.created_at)}</span>
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                </li>
-              ))}
-        </ul>
-      )}
+                ))}
+          </div>
+        )}
+      </section>
 
       <Pager page={page} totalPages={totalPages} href={(p) => href(tab, p)} />
     </div>
