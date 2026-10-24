@@ -10,6 +10,7 @@
     "test:db": "node supabase/test-rls.mjs supabase/schema.sql",
     "test:community": "node supabase/test-community.mjs supabase/schema.sql supabase/community.sql supabase/community-v2.sql",
     "issue-account": "node --env-file=.env.local scripts/issue-account.mjs",
+    "test:mask": "node --import tsx --test tests/community-mask.test.ts",
     "test:import": "node --import tsx --test tests/school-import*.test.ts"
   },
   "dependencies": {

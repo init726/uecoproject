@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getProfile, requireAdmin } from "@/lib/auth";
 import { dbMessage, isPostKind, writableKinds } from "@/lib/community";
+import { maskBannedWords } from "@/lib/community-mask";
 import { COMMENT_MAX, POST_BODY_MAX, POST_TITLE_MAX, REASON_MAX } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
-import type { ActionState } from "@/lib/types";
+import type { ActionState, Role } from "@/lib/types";
 
 // 권한은 데이터베이스(RLS·트리거·함수)가 최종적으로 막는다.
 // 여기서는 입력을 다듬고, 데이터베이스가 던진 한국어 사유를 사용자에게 돌려준다.
@@ -26,6 +27,14 @@ function validatePost({ title, body }: { title: string; body: string }) {
   return null;
 }
 
+// 금칙어를 *로 바꾼다. (관리자의 글은 그대로 둔다)
+function maskFields(role: Role, fields: { title: string; body: string }) {
+  if (role === "admin") return { ...fields, changed: false };
+  const title = maskBannedWords(fields.title);
+  const body = maskBannedWords(fields.body);
+  return { title: title.text, body: body.text, changed: title.changed || body.changed };
+}
+
 export async function createPost(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const profile = await getProfile();
   const fields = readPostFields(formData);
@@ -35,6 +44,7 @@ export async function createPost(_prev: ActionState, formData: FormData): Promis
   }
   const invalid = validatePost(fields);
   if (invalid) return { error: invalid };
+  const masked = maskFields(profile.role, fields);
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -44,14 +54,15 @@ export async function createPost(_prev: ActionState, formData: FormData): Promis
       author_id: profile.id,
       kind,
       pinned: kind === "notice" && formData.get("pinned") === "on",
-      ...fields,
+      title: masked.title,
+      body: masked.body,
     })
     .select("id")
     .single();
   if (error || !data) return { error: dbMessage(error ?? { message: "" }, "글을 저장하지 못했어요.") };
 
   revalidatePath("/community");
-  redirect(`/community/${data.id}`);
+  redirect(`/community/${data.id}${masked.changed ? "?masked=1" : ""}`);
 }
 
 export async function updatePost(
@@ -59,19 +70,24 @@ export async function updatePost(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await getProfile();
+  const profile = await getProfile();
   const fields = readPostFields(formData);
   const invalid = validatePost(fields);
   if (invalid) return { error: invalid };
+  const masked = maskFields(profile.role, fields);
 
   const supabase = await createClient();
   // RLS: 내 글만. 트리거: 게시 중인 글의 제목·본문만. 조건에 안 맞으면 0행이 바뀐다.
-  const { data, error } = await supabase.from("posts").update(fields).eq("id", postId).select("id");
+  const { data, error } = await supabase
+    .from("posts")
+    .update({ title: masked.title, body: masked.body })
+    .eq("id", postId)
+    .select("id");
   if (error) return { error: dbMessage(error, "글을 수정하지 못했어요.") };
   if (!data?.length) return { error: "수정할 수 없는 글이에요." };
 
   revalidatePath("/community");
-  redirect(`/community/${postId}`);
+  redirect(`/community/${postId}${masked.changed ? "?masked=1" : ""}`);
 }
 
 export async function deletePost(postId: string) {
@@ -94,12 +110,17 @@ export async function createComment(
   if (!body) return { error: "댓글을 입력해 주세요." };
   if (body.length > COMMENT_MAX) return { error: `댓글은 ${COMMENT_MAX}자까지 쓸 수 있어요.` };
 
+  // 금칙어는 *로 바꿔서 저장한다. (관리자는 그대로)
+  const masked = profile.role === "admin" ? { text: body, changed: false } : maskBannedWords(body);
+
   const supabase = await createClient();
-  const { error } = await supabase.from("comments").insert({ post_id: postId, author_id: profile.id, body });
+  const { error } = await supabase
+    .from("comments")
+    .insert({ post_id: postId, author_id: profile.id, body: masked.text });
   if (error) return { error: dbMessage(error, "댓글을 저장하지 못했어요.") };
 
   revalidatePath(`/community/${postId}`);
-  return { message: "댓글을 달았어요." };
+  return { message: masked.changed ? "댓글을 달았어요. 부적절한 표현은 *로 바뀌었어요." : "댓글을 달았어요." };
 }
 
 export async function deleteComment(postId: string, commentId: string) {
