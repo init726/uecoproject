@@ -362,5 +362,146 @@ await q(RP, "select public.report_content($1, null, '사유')", [targets[10]]);
 ok(true, "report limit resets after an hour");
 backdate = true;
 
+
+// =====================================================================
+// community-v3: 답변 채택 / 댓글 수정 / 스크랩
+// =====================================================================
+const Q1 = await signup("q1@school.kr", { name: "질문자", role: "student", student_no: "20901", privacy_agreed: "true" });
+const Q2 = await signup("q2@school.kr", { name: "답변자1", role: "student", student_no: "20902", privacy_agreed: "true" });
+const Q3 = await signup("q3@school.kr", { name: "답변자2", role: "student", student_no: "20903", privacy_agreed: "true" });
+const Q4 = await signup("q4@school.kr", { name: "구경꾼", role: "student", student_no: "20904", privacy_agreed: "true" });
+const addComment = async (uid, postId, body) =>
+  (await q(uid, "insert into public.comments (post_id, author_id, body) values ($1, $2, $3) returning id", [postId, uid, body])).rows[0].id;
+const accepted = async (postId) => (await q(A, "select accepted_comment_id from public.posts where id = $1", [postId])).rows[0].accepted_comment_id;
+
+const qq = (await insertPost(Q1, "question", "채택 테스트 질문", "답 좀 알려주세요")).rows[0];
+const ans1 = await addComment(Q2, qq.id, "첫 번째 답");
+const ans2 = await addComment(Q3, qq.id, "두 번째 답");
+const own = await addComment(Q1, qq.id, "질문자 본인 댓글");
+ok((await accepted(qq.id)) === null, "a new question starts unsolved");
+
+// 채택 권한
+await expectError(q(Q2, "select public.accept_comment($1, $2)", [qq.id, ans2]), "only the question author can accept", "글쓴이만");
+await expectError(q(Q4, "select public.accept_comment($1, $2)", [qq.id, ans1]), "a bystander cannot accept", "글쓴이만");
+await expectError(q(Q1, "select public.accept_comment($1, $2)", [qq.id, own]), "cannot accept my own comment", "내 댓글");
+const freePost = (await insertPost(Q1, "free", "자유글은 채택 없음", "x")).rows[0];
+const freeC = await addComment(Q2, freePost.id, "자유글 댓글");
+await expectError(q(Q1, "select public.accept_comment($1, $2)", [freePost.id, freeC]), "accepting only works on questions", "질문 글에서만");
+const otherQ = (await insertPost(Q4, "question", "다른 질문", "x")).rows[0];
+const otherC = await addComment(Q2, otherQ.id, "다른 글의 댓글");
+await expectError(q(Q1, "select public.accept_comment($1, $2)", [qq.id, otherC]), "a comment from another post cannot be accepted", "채택할 수 없는 댓글");
+await expectError(q(Q1, "update public.posts set accepted_comment_id = $1 where id = $2", [ans1, qq.id]), "accepted_comment_id cannot be set by direct UPDATE", "제목과 내용만");
+await expectError(q(Q1, "update public.posts set accepted_comment_id = $1 where id = $2", [ans1, freePost.id]), "direct UPDATE of accepted_comment_id is blocked on any post", "제목과 내용만");
+
+// 채택
+await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]);
+ok((await accepted(qq.id)) === ans1, "author accepts a comment -> question is solved");
+ok((await q(Q4, "select accepted_comment_id from public.posts where id = $1", [qq.id])).rows[0].accepted_comment_id === ans1, "everyone sees the accepted answer");
+let aNotes = (await notes(Q2)).filter((n) => n.kind === "accepted");
+ok(aNotes.length === 1 && aNotes[0].target_type === "comment" && aNotes[0].comment_id === ans1 && aNotes[0].actor_name === "질문자" && aNotes[0].excerpt === "채택 테스트 질문", "answer author is notified of the acceptance");
+await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]);
+ok((await notes(Q2)).filter((n) => n.kind === "accepted").length === 1, "re-accepting the sameStamp comment does not notify again");
+
+// 바꾸기 / 취소
+await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans2]);
+ok((await accepted(qq.id)) === ans2, "author can switch the accepted answer");
+ok((await notes(Q3)).filter((n) => n.kind === "accepted").length === 1, "the new answer author is notified");
+await q(Q1, "select public.accept_comment($1, null)", [qq.id]);
+ok((await accepted(qq.id)) === null, "author can cancel the acceptance");
+await expectError(q(Q2, "select public.accept_comment($1, null)", [qq.id]), "others cannot cancel the acceptance", "글쓴이만");
+
+// 채택된 댓글이 사라지면 채택도 풀린다
+await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]);
+await q(Q2, "select public.delete_comment($1)", [ans1]);
+ok((await accepted(qq.id)) === null, "deleting the accepted comment clears the acceptance");
+const ans3 = await addComment(Q3, qq.id, "세 번째 답");
+await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans3]);
+await q(A, "select public.moderate_content(null, $1, 'hide', '확인')", [ans3]);
+ok((await accepted(qq.id)) === null, "hiding the accepted comment clears the acceptance");
+await q(A, "select public.moderate_content(null, $1, 'restore', '문제 없음')", [ans3]);
+ok((await accepted(qq.id)) === null, "restoring does not silently re-accept");
+await expectError(q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]), "a deleted comment cannot be accepted", "채택할 수 없는 댓글");
+
+// 숨겨진 글에서는 채택할 수 없다 / 정지 계정
+const sq = (await insertPost(Q4, "question", "정지 테스트 질문", "x")).rows[0];
+const sc = await addComment(Q2, sq.id, "답");
+await q(A, "select public.set_user_suspended($1, true)", [Q4]);
+await expectError(q(Q4, "select public.accept_comment($1, $2)", [sq.id, sc]), "suspended author cannot accept", "채택할 수 없는 계정");
+await q(A, "select public.set_user_suspended($1, false)", [Q4]);
+await q(A, "select public.moderate_content($1, null, 'hide', '확인')", [sq.id]);
+await expectError(q(Q4, "select public.accept_comment($1, $2)", [sq.id, sc]), "cannot accept on a hidden post", "게시 중인 글");
+
+// 질문이 아닌 글은 채택 값을 가질 수 없다 (제약)
+await expectError(db.query("update public.posts set accepted_comment_id = $1 where id = $2", [freeC, freePost.id]), "constraint: only questions can have an accepted comment");
+
+// ---- 댓글 수정 ----
+backdate = false; // 이 검사는 시각을 그대로 봐야 한다
+const ec = await addComment(Q2, otherQ.id, "고치기 전 댓글");
+const editBefore = (await q(Q2, "select created_at, updated_at from public.comments where id = $1", [ec])).rows[0];
+ok(editBefore.updated_at.getTime() === editBefore.created_at.getTime(), "a new comment is not marked as edited");
+backdate = true;
+await q(Q2, "select public.update_comment($1, '  고친 댓글  ')", [ec]);
+const editAfter = (await q(Q2, "select body, created_at, updated_at from public.comments where id = $1", [ec])).rows[0];
+ok(editAfter.body === "고친 댓글" && editAfter.updated_at > editAfter.created_at, "author edits own comment (trimmed) and updated_at moves");
+await expectError(q(Q3, "select public.update_comment($1, '남이 고침')", [ec]), "others cannot edit my comment", "수정할 수 없는 댓글");
+await expectError(q(Q4, "select public.update_comment($1, '글쓴이도 못 고침')", [ec]), "even the post author cannot edit someone else's comment", "수정할 수 없는 댓글");
+await expectError(q(A, "select public.update_comment($1, '관리자도 못 고침')", [ec]), "admin cannot rewrite others' comments either", "수정할 수 없는 댓글");
+await expectError(q(Q2, "select public.update_comment($1, '   ')", [ec]), "blank edit rejected", "입력");
+await expectError(q(Q2, "select public.update_comment($1, $2)", [ec, "가".repeat(1001)]), "edit over 1000 chars rejected", "1000자");
+await expectError(q(Q2, "update public.comments set body = '직접 수정' where id = $1", [ec]), "direct UPDATE on comments is still blocked");
+const sameStamp = (await q(Q2, "select updated_at from public.comments where id = $1", [ec])).rows[0].updated_at;
+await q(Q2, "select public.update_comment($1, '고친 댓글')", [ec]);
+ok((await q(Q2, "select updated_at from public.comments where id = $1", [ec])).rows[0].updated_at.getTime() === sameStamp.getTime(), "saving identical text is a no-op (not marked as edited again)");
+// 채택된 댓글을 고쳐도 채택은 유지
+await q(Q4, "select public.accept_comment($1, $2)", [otherQ.id, ec]);
+await q(Q2, "select public.update_comment($1, '채택 후 보강한 댓글')", [ec]);
+ok((await accepted(otherQ.id)) === ec, "editing an accepted answer keeps it accepted");
+// 삭제/숨김/정지/숨겨진 글
+await q(Q2, "select public.delete_comment($1)", [ec]);
+await expectError(q(Q2, "select public.update_comment($1, '삭제 후 수정')", [ec]), "deleted comment cannot be edited", "수정할 수 없는 댓글");
+const hc = await addComment(Q3, otherQ.id, "숨겨질 댓글");
+await q(A, "select public.moderate_content(null, $1, 'hide', '확인')", [hc]);
+await expectError(q(Q3, "select public.update_comment($1, '숨김 후 수정')", [hc]), "hidden comment cannot be edited", "수정할 수 없는 댓글");
+const sc2 = await addComment(Q3, otherQ.id, "정지 전 댓글");
+await q(A, "select public.set_user_suspended($1, true)", [Q3]);
+await expectError(q(Q3, "select public.update_comment($1, '정지 중 수정')", [sc2]), "suspended user cannot edit", "정지된 계정");
+await q(A, "select public.set_user_suspended($1, false)", [Q3]);
+const pc = await addComment(Q3, otherQ.id, "글이 숨겨지면 수정 불가");
+await q(A, "select public.moderate_content($1, null, 'hide', '확인')", [otherQ.id]);
+await expectError(q(Q3, "select public.update_comment($1, '숨겨진 글의 댓글 수정')", [pc]), "cannot edit comments under a hidden post", "수정할 수 없는 댓글");
+await q(A, "select public.moderate_content($1, null, 'restore', '문제 없음')", [otherQ.id]);
+
+// ---- 스크랩 ----
+const bp = (await insertPost(Q4, "free", "스크랩 대상 글", "x")).rows[0];
+await q(Q2, "insert into public.bookmarks (post_id) values ($1)", [bp.id]);
+ok((await q(Q2, "select * from public.bookmarks")).rows.length === 1, "user bookmarks a post (user_id defaults to me)");
+ok((await q(Q2, "select user_id from public.bookmarks")).rows[0].user_id === Q2, "bookmark is stored under my id");
+ok((await q(Q3, "select * from public.bookmarks")).rows.length === 0, "other users cannot see my bookmarks");
+ok((await q(A, "select * from public.bookmarks")).rows.length === 0, "not even admins can see them");
+await expectError(q(Q2, "insert into public.bookmarks (post_id) values ($1)", [bp.id]), "duplicate bookmark rejected");
+await expectError(q(Q3, "insert into public.bookmarks (user_id, post_id) values ($1, $2)", [Q2, bp.id]), "cannot bookmark on someone else's behalf");
+await expectError(q(Q2, "update public.bookmarks set created_at = now() where post_id = $1", [bp.id]), "bookmarks cannot be updated");
+ok((await q(Q3, "delete from public.bookmarks where post_id = $1", [bp.id])).affectedRows === 0, "others cannot remove my bookmark");
+// 숨겨진/삭제된 글은 스크랩할 수 없다
+const hp = (await insertPost(Q4, "free", "숨겨질 글", "x")).rows[0];
+await q(A, "select public.moderate_content($1, null, 'hide', '확인')", [hp.id]);
+await expectError(q(Q3, "insert into public.bookmarks (post_id) values ($1)", [hp.id]), "cannot bookmark a hidden post");
+// 스크랩 후 글이 숨겨지면 조회 때 걸러진다 (posts 의 RLS)
+const joined = await q(Q2, "select b.post_id from public.bookmarks b join public.posts p on p.id = b.post_id");
+ok(joined.rows.length === 1, "bookmarked visible post shows up through the join");
+await q(A, "select public.moderate_content($1, null, 'hide', '확인')", [bp.id]);
+ok((await q(Q2, "select b.post_id from public.bookmarks b join public.posts p on p.id = b.post_id")).rows.length === 0, "a bookmarked post that gets hidden disappears from the join");
+await q(A, "select public.moderate_content($1, null, 'restore', '문제 없음')", [bp.id]);
+ok((await q(Q2, "delete from public.bookmarks where post_id = $1", [bp.id])).affectedRows === 1, "owner removes the bookmark");
+// 200개 상한
+await db.query("select set_config('request.jwt.claim.sub', $1, false)", [A]);
+await db.query("insert into public.posts (author_id, kind, title, body) select $1, 'notice', '스크랩 상한용 ' || g, 'x' from generate_series(1, 201) g", [A]);
+await db.query("insert into public.bookmarks (user_id, post_id) select $1, id from public.posts where title like '스크랩 상한용%' order by title limit 200", [Q3]);
+ok((await db.query("select count(*)::int as n from public.bookmarks where user_id = $1", [Q3])).rows[0].n === 200, "200 bookmarks are allowed");
+await expectError(q(Q3, "insert into public.bookmarks (post_id) select id from public.posts where title = '스크랩 상한용 99'"), "the 201st bookmark is rejected", "200개");
+// 계정이 지워지면 스크랩도 사라진다
+await db.query("delete from auth.users where id = $1", [Q3]);
+ok((await db.query("select * from public.bookmarks where user_id = $1", [Q3])).rows.length === 0, "deleting an account removes its bookmarks");
+
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

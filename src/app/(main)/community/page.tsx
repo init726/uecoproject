@@ -1,4 +1,4 @@
-import { Bell, MessagesSquare, Search, UserRound } from "lucide-react";
+import { Bell, CircleHelp, MessagesSquare, Search, UserRound } from "lucide-react";
 import Link from "next/link";
 import { getUnreadCount } from "@/components/community-badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,13 @@ import { COMMUNITY_PAGE_SIZE, POST_KIND_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
 import { Pager } from "./pager";
+import { cn } from "@/lib/utils";
 import { CommunityHeader, EmptyState, kindChipClass, PostRow } from "./ui";
 
-type Row = Pick<Post, "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "status" | "created_at"> & {
+type Row = Pick<
+  Post,
+  "id" | "kind" | "title" | "author_name" | "author_role" | "pinned" | "status" | "created_at" | "accepted_comment_id"
+> & {
   comments: { count: number }[];
 };
 
@@ -27,6 +31,8 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   const kindParam = String(searchParams.kind ?? "");
   const kind = FILTERS.find((f) => f.value && f.value === kindParam)?.value ?? "";
   const q = sanitizeSearch(String(searchParams.q ?? ""));
+  // 질문 말머리에서만: 아직 채택된 답변이 없는 질문만 보기
+  const openOnly = kind === "question" && searchParams.open === "1";
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
 
   const profile = await getProfile();
@@ -35,9 +41,10 @@ export default async function CommunityPage(props: PageProps<"/community">) {
   // 게시 중인 글만 최신순으로. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
   let query = supabase
     .from("posts")
-    .select("id, kind, title, author_name, author_role, pinned, status, created_at, comments(count)", { count: "exact" })
+    .select("id, kind, title, author_name, author_role, pinned, status, created_at, accepted_comment_id, comments!comments_post_id_fkey(count)", { count: "exact" })
     .eq("status", "published");
   if (kind) query = query.eq("kind", kind);
+  if (openOnly) query = query.is("accepted_comment_id", null);
   // 제목이나 본문에 검색어가 들어 있는 글 (대소문자 구분 없음)
   if (q) query = query.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
@@ -49,11 +56,14 @@ export default async function CommunityPage(props: PageProps<"/community">) {
 
   const posts = data ?? [];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / COMMUNITY_PAGE_SIZE));
-  const href = (next: { kind?: string; q?: string; page?: number }) => {
+  const href = (next: { kind?: string; q?: string; open?: boolean; page?: number }) => {
     const search = new URLSearchParams();
     const k = next.kind ?? kind;
     const keyword = next.q ?? q;
+    // 말머리를 바꾸면 미해결 필터는 풀린다. (질문에서만 의미가 있다)
+    const open = next.open ?? (next.kind === undefined && openOnly);
     if (k) search.set("kind", k);
+    if (open && k === "question") search.set("open", "1");
     if (keyword) search.set("q", keyword);
     if (next.page && next.page > 1) search.set("page", String(next.page));
     const text = search.toString();
@@ -124,6 +134,19 @@ export default async function CommunityPage(props: PageProps<"/community">) {
               {f.label}
             </Link>
           ))}
+          {kind === "question" && (
+            <Link
+              href={href({ open: !openOnly })}
+              className={cn(
+                "ml-2 flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground hover:bg-muted",
+                openOnly && "border-primary bg-accent font-semibold text-primary hover:bg-accent",
+              )}
+              aria-pressed={openOnly}
+            >
+              <CircleHelp className="size-4" aria-hidden="true" />
+              미해결만 보기
+            </Link>
+          )}
           {q && (
             <Link href={href({ q: "" })} className="ml-auto text-xs text-muted-foreground hover:text-primary">
               검색 초기화
@@ -133,7 +156,15 @@ export default async function CommunityPage(props: PageProps<"/community">) {
 
         {posts.length === 0 ? (
           <EmptyState
-            title={q ? `'${q}' 검색 결과가 없습니다.` : kind ? "이 말머리에는 아직 글이 없습니다." : "아직 글이 없습니다."}
+            title={
+              q
+                ? `'${q}' 검색 결과가 없습니다.`
+                : openOnly
+                  ? "미해결 질문이 없습니다."
+                  : kind
+                    ? "이 말머리에는 아직 글이 없습니다."
+                    : "아직 글이 없습니다."
+            }
             detail={q ? "다른 검색어로 다시 찾아보세요." : "첫 글을 남겨 보세요."}
           />
         ) : (

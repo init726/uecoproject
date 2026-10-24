@@ -148,3 +148,51 @@ export async function markAllNotificationsRead() {
   await supabase.rpc("mark_all_notifications_read");
   revalidatePath("/", "layout");
 }
+
+// 질문 글쓴이가 답변을 채택한다. commentId 가 null 이면 채택을 푼다.
+// 글쓴이인지·질문인지·내 댓글이 아닌지는 데이터베이스 함수가 확인한다.
+export async function acceptComment(postId: string, commentId: string | null) {
+  await getProfile();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("accept_comment", { p_post_id: postId, p_comment_id: commentId });
+  if (error) redirect(`/community/${postId}?error=${encodeURIComponent(dbMessage(error, "채택하지 못했어요."))}`);
+
+  revalidatePath(`/community/${postId}`);
+  revalidatePath("/community");
+}
+
+// 내 댓글 고치기
+export async function updateComment(
+  postId: string,
+  commentId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await getProfile();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { error: "댓글을 입력해 주세요." };
+  if (body.length > COMMENT_MAX) return { error: `댓글은 ${COMMENT_MAX}자까지 쓸 수 있어요.` };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_comment", { p_comment_id: commentId, p_body: body });
+  if (error) return { error: dbMessage(error, "댓글을 수정하지 못했어요.") };
+
+  revalidatePath(`/community/${postId}`);
+  return { message: "댓글을 수정했어요." };
+}
+
+// 스크랩 담기/해제. 보이지 않는 글은 RLS가 막는다.
+export async function toggleBookmark(postId: string, on: boolean) {
+  const profile = await getProfile();
+  const supabase = await createClient();
+  const { error } = on
+    ? await supabase.from("bookmarks").insert({ user_id: profile.id, post_id: postId })
+    : await supabase.from("bookmarks").delete().eq("post_id", postId).eq("user_id", profile.id);
+  // 이미 스크랩한 글을 또 담은 경우(23505)는 그대로 둔다.
+  if (error && error.code !== "23505") {
+    redirect(`/community/${postId}?error=${encodeURIComponent(dbMessage(error, "스크랩하지 못했어요."))}`);
+  }
+
+  revalidatePath(`/community/${postId}`);
+  revalidatePath("/community/me");
+}

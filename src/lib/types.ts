@@ -78,6 +78,8 @@ export type Post = {
   body: string;
   pinned: boolean;
   status: ContentStatus;
+  // 질문 글에서 글쓴이가 채택한 댓글. 있으면 "해결됨"이다.
+  accepted_comment_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -91,4 +93,5 @@ export type Comment = {
   body: string;
   status: ContentStatus;
   created_at: string;
+  updated_at: string;
 };

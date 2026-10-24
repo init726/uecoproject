@@ -1,4 +1,4 @@
-import { MessageSquare, Pin } from "lucide-react";
+import { CircleCheck, MessageSquare, Pin } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { CONTENT_STATUS_LABEL, POST_KIND_LABEL, ROLE_LABEL } from "@/lib/constants";
@@ -89,6 +89,16 @@ export function KindBadge({ kind }: { kind: Post["kind"] }) {
   );
 }
 
+// 채택된 답변이 있는 질문에 붙는 배지
+export function SolvedBadge() {
+  return (
+    <Badge variant="secondary">
+      <CircleCheck aria-hidden="true" />
+      해결됨
+    </Badge>
+  );
+}
+
 export function StatusBadge({ status }: { status: ContentStatus }) {
   if (status === "published") return null;
   return <Badge variant="destructive">{CONTENT_STATUS_LABEL[status]}</Badge>;
@@ -105,6 +115,7 @@ export function AuthorLine({ name, role, createdAt }: { name: string; role: Role
 }
 
 type RowPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "created_at" | "status"> & {
+  accepted_comment_id?: string | null;
   author_name?: string;
   author_role?: Role;
   comments: { count: number }[];
@@ -130,6 +141,7 @@ export function PostRow({ post }: { post: RowPost }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <KindBadge kind={post.kind} />
+          {post.kind === "question" && post.accepted_comment_id && <SolvedBadge />}
           <StatusBadge status={post.status} />
         </div>
         <p className="mt-1 text-sm font-semibold wrap-break-word group-hover:text-primary">{post.title}</p>

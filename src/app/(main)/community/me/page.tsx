@@ -5,13 +5,15 @@ import { getProfile } from "@/lib/auth";
 import { COMMUNITY_PAGE_SIZE } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import type { Comment, Post } from "@/lib/types";
+import type { Comment, Post, Role } from "@/lib/types";
 import { Pager } from "../pager";
 import { chipClass, CommunityHeader, EmptyState, PostRow, StatusBadge } from "../ui";
 
-type MyPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "status" | "created_at"> & {
+type MyPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "status" | "created_at" | "accepted_comment_id"> & {
   comments: { count: number }[];
 };
+// 스크랩한 글. 숨겨지거나 삭제된 글은 posts 의 RLS 때문에 !inner 조인에서 빠진다.
+type MyBookmark = { created_at: string; post: MyPost & { author_name: string; author_role: Role } };
 type MyComment = Pick<Comment, "id" | "post_id" | "body" | "status" | "created_at"> & {
   post: { title: string } | null;
 };
@@ -19,11 +21,12 @@ type MyComment = Pick<Comment, "id" | "post_id" | "body" | "status" | "created_a
 const TABS = [
   { value: "posts", label: "내 글" },
   { value: "comments", label: "내 댓글" },
+  { value: "bookmarks", label: "스크랩" },
 ] as const;
 
 export default async function MyActivityPage(props: PageProps<"/community/me">) {
   const searchParams = await props.searchParams;
-  const tab = searchParams.tab === "comments" ? "comments" : "posts";
+  const tab = searchParams.tab === "comments" ? "comments" : searchParams.tab === "bookmarks" ? "bookmarks" : "posts";
   const page = Math.max(1, Number.parseInt(String(searchParams.page ?? "1"), 10) || 1);
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
   const to = from + COMMUNITY_PAGE_SIZE - 1;
@@ -34,10 +37,20 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
   // RLS가 삭제된 글·댓글과 숨겨진 글에 달린 댓글을 걸러낸다. 그래서 '검토 중'인 내 글은 보이지만
   // 삭제한 글은 나오지 않는다. 관리자는 RLS상 전부 보이므로 상태로 한 번 더 거른다.
   const mine =
-    tab === "posts"
+    tab === "bookmarks"
+      ? await supabase
+          .from("bookmarks")
+          .select(
+            "created_at, post:posts!inner(id, kind, title, pinned, status, created_at, accepted_comment_id, author_name, author_role, comments!comments_post_id_fkey(count))",
+            { count: "exact" },
+          )
+          .order("created_at", { ascending: false })
+          .range(from, to)
+          .overrideTypes<MyBookmark[], { merge: false }>()
+      : tab === "posts"
       ? await supabase
           .from("posts")
-          .select("id, kind, title, pinned, status, created_at, comments(count)", { count: "exact" })
+          .select("id, kind, title, pinned, status, created_at, accepted_comment_id, comments!comments_post_id_fkey(count)", { count: "exact" })
           .eq("author_id", profile.id)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })
@@ -45,7 +58,7 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
           .overrideTypes<MyPost[], { merge: false }>()
       : await supabase
           .from("comments")
-          .select("id, post_id, body, status, created_at, post:posts(title)", { count: "exact" })
+          .select("id, post_id, body, status, created_at, post:posts!comments_post_id_fkey(title)", { count: "exact" })
           .eq("author_id", profile.id)
           .neq("status", "deleted")
           .order("created_at", { ascending: false })
@@ -81,12 +94,22 @@ export default async function MyActivityPage(props: PageProps<"/community/me">) 
 
         {rows.length === 0 ? (
           <EmptyState
-            title={tab === "posts" ? "아직 쓴 글이 없습니다." : "아직 쓴 댓글이 없습니다."}
-            detail={tab === "posts" ? "커뮤니티에 첫 글을 남겨 보세요." : "다른 사람의 글에 댓글을 남겨 보세요."}
+            title={
+              tab === "posts" ? "아직 쓴 글이 없습니다." : tab === "comments" ? "아직 쓴 댓글이 없습니다." : "스크랩한 글이 없습니다."
+            }
+            detail={
+              tab === "posts"
+                ? "커뮤니티에 첫 글을 남겨 보세요."
+                : tab === "comments"
+                  ? "다른 사람의 글에 댓글을 남겨 보세요."
+                  : "글 아래의 스크랩 버튼을 누르면 이곳에 모입니다."
+            }
           />
         ) : (
           <div className="divide-y">
-            {tab === "posts"
+            {tab === "bookmarks"
+              ? (rows as MyBookmark[]).map((b) => <PostRow key={b.post.id} post={b.post} />)
+              : tab === "posts"
               ? (rows as MyPost[]).map((post) => <PostRow key={post.id} post={post} />)
               : (rows as MyComment[]).map((comment) => (
                   <Link
