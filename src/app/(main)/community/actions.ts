@@ -95,11 +95,21 @@ export async function createComment(
   if (body.length > COMMENT_MAX) return { error: `댓글은 ${COMMENT_MAX}자까지 쓸 수 있어요.` };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("comments").insert({ post_id: postId, author_id: profile.id, body });
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({ post_id: postId, author_id: profile.id, body })
+    .select("status")
+    .single();
   if (error) return { error: dbMessage(error, "댓글을 저장하지 못했어요.") };
 
   revalidatePath(`/community/${postId}`);
-  return { message: "댓글을 달았어요." };
+  // 금칙어 때문에 검토 중으로 시작한 댓글은 다른 사람에게 바로 보이지 않는다.
+  return {
+    message:
+      data?.status === "review"
+        ? "댓글을 등록했어요. 관리자가 확인한 뒤에 다른 사람에게 보여요."
+        : "댓글을 달았어요.",
+  };
 }
 
 export async function deleteComment(postId: string, commentId: string) {

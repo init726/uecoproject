@@ -73,7 +73,7 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
                 </Link>
               </>
             ) : (
-              "신고가 접수되어 관리자가 검토하는 중입니다. 다른 사용자에게는 보이지 않습니다."
+              "관리자가 검토하는 중입니다. 검토가 끝나기 전에는 다른 사용자에게 보이지 않습니다."
             )}
           </AlertDescription>
         </Alert>

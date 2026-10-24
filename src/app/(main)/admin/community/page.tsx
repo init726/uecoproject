@@ -245,7 +245,7 @@ function ItemRow({ item }: { item: Item }) {
 
       <div className="flex flex-col gap-1 rounded-lg border bg-muted/20 p-3 text-xs">
         <p className="font-semibold text-school-navy">신고 {item.reports.length}건</p>
-        {item.reports.length === 0 && <p className="text-muted-foreground">관리자가 직접 숨긴 항목입니다.</p>}
+        {item.reports.length === 0 && <p className="text-muted-foreground">신고 없이 숨겨진 항목입니다. (관리자 숨김 또는 금칙어 자동 숨김 — 처리 이력에서 사유를 확인하세요.)</p>}
         {item.reports.map((report, i) => (
           <p key={i} className="text-muted-foreground">
             {report.reason}
