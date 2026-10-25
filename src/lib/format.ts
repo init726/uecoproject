@@ -21,6 +21,11 @@ export function kstLocalToIso(local: string) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+// 반대 방향: ISO 시각을 한국 시간 기준 <input type="datetime-local"> 값으로 (과제 수정 폼의 기본값)
+export function isoToKstLocal(iso: string) {
+  return new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
 export function isPast(iso: string) {
   return new Date(iso).getTime() < Date.now();
 }

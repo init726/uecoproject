@@ -2,6 +2,7 @@ import {withSchemaFallback,isMissingSchema} from "@/lib/schema-compat";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProfile } from "@/lib/auth";
 import { countChars, formatDateTime, formatFileSize, isPast } from "@/lib/format";
@@ -87,6 +88,13 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
             {assignment.allow_late ? "마감 후 제출 가능(지각 표시)" : "마감 후 제출 불가"}
             {assignment.max_chars && ` · ${assignment.max_chars}자 이내`}
           </span>
+        }
+        actions={
+          isTeacher && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/assignments/${assignment.id}/edit`}>과제 수정</Link>
+            </Button>
+          )
         }
       />
 
