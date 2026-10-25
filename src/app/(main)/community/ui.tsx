@@ -24,7 +24,7 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
   );
 }
 
-// 말머리별 색: 학교 공지=하늘색, 궁금해요=검정, 이야기=회색. (색 이름은 globals.css 의 kind-* 에 있다)
+// 말머리별 색: 학교 공지=하늘색, 질문=검정, 자유게시판=회색. (색 이름은 globals.css 의 kind-* 에 있다)
 // Tailwind 가 클래스를 찾을 수 있게 이름을 통째로 적어 둔다.
 const KIND_STYLE = {
   notice: {

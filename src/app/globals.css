@@ -107,7 +107,7 @@
   --sidebar-accent-foreground: #0b0f14;
   --sidebar-border: #e1e1da;
   --sidebar-ring: #0b0f14;
-  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 궁금해요=검정, 이야기=회색.
+  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 질문=검정, 자유게시판=회색.
      soft=바탕, 이름만 붙은 것=그 위의 글자색, bar=왼쪽 띠·선택 고리 색 */
   --kind-notice: #0b0f14;
   --kind-notice-soft: #bcd9ff;
