@@ -73,6 +73,7 @@ test("missing school notification table and read RPC are recognized without hidi
  const {isMissingSchema}=await import("../src/lib/schema-compat");
  assert.equal(isMissingSchema({code:"PGRST205",message:"Could not find the table 'public.learning_notifications' in the schema cache"},["learning_notifications"]),true);
  assert.equal(isMissingSchema({code:"42P01",message:'relation "public.learning_notifications" does not exist'},["learning_notifications"]),true);
+ assert.equal(isMissingSchema({code:"PGRST200",message:"Could not find a relationship between 'posts' and 'post_reads' in the schema cache"},["post_reads"]),true);
  assert.equal(isMissingSchema({code:"PGRST202",message:"Could not find the function public.mark_learning_notifications_read"},["mark_learning_notifications_read"]),true);
  assert.equal(isMissingSchema({code:"42501",message:"permission denied for table learning_notifications"},["learning_notifications"]),false);
  assert.equal(isMissingSchema({code:"",message:"network unavailable"},["learning_notifications"]),false);

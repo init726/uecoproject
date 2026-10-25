@@ -41,6 +41,8 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
     supabase.from("reports").select("post_id, comment_id").eq("reporter_id", me?.id ?? ""),
     // 내가 이 글을 스크랩했는지 (RLS: 내 스크랩만 보인다)
     supabase.from("bookmarks").select("post_id").eq("post_id", postId).maybeSingle(),
+    // 읽음 기록. 이미 있으면 그대로 둔다. 볼 수 없는 글이거나 v6 전 DB면 조용히 실패한다.
+    supabase.from("post_reads").upsert({ post_id: postId }, { onConflict: "user_id,post_id", ignoreDuplicates: true }),
   ]);
   if (!post) notFound();
 

@@ -1,7 +1,5 @@
 import { CalendarDays, FileSpreadsheet, Flag, LayoutDashboard, MessageSquare, Server, User, UserCheck, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import { Suspense } from "react";
-import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
@@ -46,11 +44,6 @@ export function AdminShell({
               <Icon className="size-4" />
               {label}
               {href === "/admin/approvals" && pendingBadge}
-              {href === "/community" && (
-                <Suspense fallback={null}>
-                  <CommunityBadge className="ml-auto" />
-                </Suspense>
-              )}
             </NavLink>
           ))}
         </nav>
@@ -79,11 +72,6 @@ export function AdminShell({
             {NAV.map(({ href, label, exact }) => (
               <NavLink key={href} href={href} exact={exact} className="school-top-link h-9 gap-2 px-3.5 text-sm">
                 {label}
-                {href === "/community" && (
-                  <Suspense fallback={null}>
-                    <CommunityBadge />
-                  </Suspense>
-                )}
               </NavLink>
             ))}
           </nav>

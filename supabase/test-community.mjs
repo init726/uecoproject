@@ -619,5 +619,21 @@ await db.exec(readFileSync("supabase/community-v5.sql", "utf8"));
 ok((await db.query("select author_name from public.posts where id = $1", [realPost.id])).rows[0].author_name === "20303 학생3", "re-running v5 backfills old student posts (idempotent)");
 ok((await db.query("select count(*)::int as n from public.posts where author_role = 'teacher' and author_name like '% %'")).rows[0].n === 0, "backfill leaves teacher names alone");
 
+// --- v6: 읽은 글 ---
+const readPost = (await insertPost(S4, "free", "읽음 확인", "본문")).rows[0];
+await q(S5, "insert into public.post_reads (post_id) values ($1)", [readPost.id]);
+await q(S5, "insert into public.post_reads (post_id) values ($1) on conflict do nothing", [readPost.id]);
+ok((await q(S5, "select user_id from public.post_reads where post_id = $1", [readPost.id])).rows.length === 1 &&
+   (await q(S5, "select user_id from public.post_reads where post_id = $1", [readPost.id])).rows[0].user_id === S5, "reading a post records one row for me (repeat is ignored)");
+ok((await q(S6, "select * from public.post_reads")).rows.length === 0, "others cannot see what I read");
+ok((await q(A, "select * from public.post_reads")).rows.length === 0, "admin cannot see read records either");
+await expectError(q(S6, "insert into public.post_reads (user_id, post_id) values ($1, $2)", [S5, readPost.id]), "cannot record a read for someone else", "row-level security");
+const embedded = (await q(S5, "select p.id, (select count(*)::int from public.post_reads r where r.post_id = p.id) as reads from public.posts p where p.id = $1", [readPost.id])).rows[0];
+ok(embedded.reads === 1, "list can join my reads (RLS keeps only mine)");
+await db.query("update public.posts set status = 'review' where id = $1", [readPost.id]);
+await expectError(q(S6, "insert into public.post_reads (post_id) values ($1)", [readPost.id]), "cannot record a read on a hidden post", "row-level security");
+await db.exec(readFileSync("supabase/community-v6.sql", "utf8"));
+ok(true, "community-v6.sql can be re-run");
+
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

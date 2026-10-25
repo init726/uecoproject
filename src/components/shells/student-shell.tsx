@@ -2,7 +2,6 @@ import { House, ListTodo, MessageSquare, User } from "lucide-react";
 import { NotificationLink } from "@/components/notification-link";
 import Link from "next/link";
 import { Suspense } from "react";
-import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
@@ -26,11 +25,6 @@ export function StudentShell({ profile, children }: { profile: Profile; children
             {NAV.map(({ href, label }) => (
               <NavLink key={href} href={href} className="school-top-link gap-2">
                 {label}
-                {href === "/community" && (
-                  <Suspense fallback={null}>
-                    <CommunityBadge />
-                  </Suspense>
-                )}
               </NavLink>
             ))}
           </nav>
@@ -56,11 +50,6 @@ export function StudentShell({ profile, children }: { profile: Profile; children
           >
             <Icon className="size-5" />
             {label}
-            {href === "/community" && (
-              <Suspense fallback={null}>
-                <CommunityBadge className="absolute top-1.5 left-1/2 ml-2" />
-              </Suspense>
-            )}
           </NavLink>
         ))}
       </nav>

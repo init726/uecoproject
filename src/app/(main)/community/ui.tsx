@@ -113,14 +113,15 @@ type RowPost = Pick<Post, "id" | "kind" | "title" | "pinned" | "created_at" | "s
   comment_count: number;
 };
 
-// 24시간 안에 올라온 글인지 (NEW 배지). 현재 시각을 읽는 부분을 함수로 떼어 두었다.
-const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+// 1시간 안에 올라온 글인지 (NEW 배지). 현재 시각을 읽는 부분을 함수로 떼어 두었다.
+const NEW_WINDOW_MS = 60 * 60 * 1000;
 function isRecent(iso: string) {
   return Date.now() - new Date(iso).getTime() < NEW_WINDOW_MS;
 }
 
 // 목록의 글 한 줄. 작성자 정보가 있으면 보여준다. (내 글 목록에는 필요 없다)
-export function PostRow({ post }: { post: RowPost }) {
+// read: 내가 이미 연 글이면 NEW 대신 "읽음"을 보여 준다.
+export function PostRow({ post, read = false }: { post: RowPost; read?: boolean }) {
   return (
     <Link
       href={`/community/${post.id}`}
@@ -142,7 +143,9 @@ export function PostRow({ post }: { post: RowPost }) {
           <KindBadge kind={post.kind} />
           {post.kind === "question" && post.accepted_comment_id && <SolvedBadge />}
           <StatusBadge status={post.status} />
-          {isRecent(post.created_at) && (
+          {read ? (
+            <span className="text-[11px] font-medium text-muted-foreground">읽음</span>
+          ) : isRecent(post.created_at) && (
             <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[10px] leading-none font-bold text-primary-foreground">
               NEW
             </span>

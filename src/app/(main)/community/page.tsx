@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { getProfile } from "@/lib/auth";
 import { sanitizeSearch, writableKinds } from "@/lib/community";
 import { COMMUNITY_PAGE_SIZE, POST_KIND_LABEL } from "@/lib/constants";
+import { withSchemaFallback } from "@/lib/schema-compat";
 import { createClient } from "@/lib/supabase/server";
 import type { Post } from "@/lib/types";
 import { Pager } from "./pager";
@@ -24,7 +25,7 @@ type Row = Pick<
   | "created_at"
   | "accepted_comment_id"
   | "comment_count"
->;
+> & { post_reads?: { read_at: string }[] };
 
 // 정렬. 고정된 공지는 어떤 정렬에서도 맨 위에 둔다.
 const SORTS = [
@@ -53,30 +54,35 @@ export default async function CommunityPage(props: PageProps<"/community">) {
 
   const supabase = await createClient();
 
-  // 게시 중인 글만. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
-  let query = supabase
-    .from("posts")
-    .select(
-      "id, kind, title, author_name, author_role, pinned, status, created_at, accepted_comment_id, comment_count",
-      { count: "exact" },
-    )
-    .eq("status", "published");
-  if (kind) query = query.eq("kind", kind);
-  if (openOnly) query = query.is("accepted_comment_id", null);
-  // 제목이나 본문에 검색어가 들어 있는 글 (대소문자 구분 없음)
-  if (q) query = query.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
   const from = (page - 1) * COMMUNITY_PAGE_SIZE;
-  query = query.order("pinned", { ascending: false });
-  // 댓글 수·마지막 활동 시각은 DB 트리거가 글에 맞춰 둔 값이다. 같은 값이면 최신 글이 먼저.
-  if (sort === "comments") query = query.order("comment_count", { ascending: false });
-  if (sort === "active") query = query.order("last_activity_at", { ascending: false });
+  // 게시 중인 글만. 고정된 공지는 맨 위. (RLS도 숨겨진 글은 내주지 않는다)
+  // post_reads(read_at): 내가 읽은 기록을 같은 조회로 함께 가져온다. (RLS가 내 기록만 돌려준다)
+  // community-v6.sql 을 아직 실행하지 않은 DB에서는 읽음 표시 없이 목록만 가져온다.
+  const loadPosts = (withReads: boolean) => {
+    let query = supabase
+      .from("posts")
+      .select(
+        `id, kind, title, author_name, author_role, pinned, status, created_at, accepted_comment_id, comment_count${withReads ? ", post_reads(read_at)" : ""}`,
+        { count: "exact" },
+      )
+      .eq("status", "published");
+    if (kind) query = query.eq("kind", kind);
+    if (openOnly) query = query.is("accepted_comment_id", null);
+    // 제목이나 본문에 검색어가 들어 있는 글 (대소문자 구분 없음)
+    if (q) query = query.or(`title.ilike.%${q}%,body.ilike.%${q}%`);
+    query = query.order("pinned", { ascending: false });
+    // 댓글 수·마지막 활동 시각은 DB 트리거가 글에 맞춰 둔 값이다. 같은 값이면 최신 글이 먼저.
+    if (sort === "comments") query = query.order("comment_count", { ascending: false });
+    if (sort === "active") query = query.order("last_activity_at", { ascending: false });
+    return query
+      .order("created_at", { ascending: false })
+      .range(from, from + COMMUNITY_PAGE_SIZE - 1)
+      .overrideTypes<Row[], { merge: false }>();
+  };
   // 내 정보·글 목록·안 읽은 알림 수는 서로 상관없으므로 한꺼번에 보낸다.
   const [profile, { data, count }, unread] = await Promise.all([
     getProfile(),
-    query
-      .order("created_at", { ascending: false })
-      .range(from, from + COMMUNITY_PAGE_SIZE - 1)
-      .overrideTypes<Row[], { merge: false }>(),
+    withSchemaFallback(loadPosts, ["post_reads"]),
     getUnreadCount(),
   ]);
 
@@ -214,7 +220,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
         ) : (
           <div className="divide-y">
             {posts.map((post) => (
-              <PostRow key={post.id} post={post} />
+              <PostRow key={post.id} post={post} read={Boolean(post.post_reads?.length)} />
             ))}
           </div>
         )}
