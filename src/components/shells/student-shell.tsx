@@ -6,6 +6,7 @@ import { CommunityBadge } from "@/components/community-badge";
 import { NavLink } from "@/components/shells/nav-link";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/home", label: "홈", icon: House },
@@ -27,17 +28,20 @@ export function StudentShell({ profile, children }: { profile: Profile; children
                 {label}
                 {href === "/community" && (
                   <Suspense fallback={null}>
-                    <CommunityBadge tone="onPrimary" />
+                    <CommunityBadge />
                   </Suspense>
                 )}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto"><Suspense fallback={null}><NotificationLink /></Suspense></div>
-          <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
-            <span className="block truncate text-sm font-semibold">{profile.name}</span>
-            <span className="block text-xs text-white/80">{profile.student_no} · 학생</span>
-          </Link>
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            <Suspense fallback={null}><NotificationLink compact /></Suspense>
+            <Link href="/me" className="min-w-0 rounded-sm text-right">
+              <span className="block truncate text-sm font-bold">{profile.name}</span>
+              <span className="block text-xs text-muted-foreground">{profile.student_no} · 학생</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

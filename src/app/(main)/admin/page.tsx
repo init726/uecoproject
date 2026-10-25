@@ -6,6 +6,7 @@ import { ROLE_LABEL } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 import { createAdminClient, hasAdminKey } from "@/lib/supabase/admin";
 import type { Role } from "@/lib/types";
+import { PageHeader } from "@/components/page-header";
 
 type ProfileRow = { id: string; name: string; role: Role; approved: boolean; created_at: string };
 
@@ -48,22 +49,22 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="font-mono text-xl font-bold">대시보드</h2>
+      <PageHeader eyebrow="학교 관리" title="대시보드" description="계정, 수업, 과제 현황을 한눈에 봅니다." />
 
       {pending > 0 && (
         <Link
           href="/admin/approvals"
-          className="rounded-lg border border-primary/40 bg-primary/10 p-4 text-sm hover:bg-primary/15"
+          className="surface bg-accent p-4 text-sm text-accent-foreground hover:brightness-95"
         >
-          승인을 기다리는 교사가 <b className="text-primary">{pending}명</b> 있어요 →
+          승인을 기다리는 교사가 <b>{pending}명</b> 있어요 →
         </Link>
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border bg-card p-4">
+          <div key={s.label} className="surface p-4">
             <p className="text-xs text-muted-foreground">{s.label}</p>
-            <p className="font-mono text-2xl font-bold">{s.value}</p>
+            <p className="text-2xl font-extrabold tabular-nums">{s.value}</p>
           </div>
         ))}
       </div>

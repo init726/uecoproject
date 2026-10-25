@@ -7,12 +7,13 @@
 
 @theme inline {
   --color-background: var(--background);
-  --color-school-navy: #1b2b45; /* 제목용 남색 (코발트와 같은 계열) */
-  --color-school-gold: #6f8fd8; /* 포인트 색 (연한 코발트) */
   --color-foreground: var(--foreground);
-  --font-sans: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --color-school-navy: var(--school-navy); /* 제목용 진한 글자색 (라이트=검정, 다크=밝은 회백색) */
+  --color-school-gold: var(--school-gold); /* 작은 포인트 선·점 (연한 하늘색) */
+  --font-sans: var(--font-noto-kr), "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
+  --font-logo: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive; /* 로고(Cue) 전용: 컴퓨터에 설치된 Comic Sans */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -42,6 +43,16 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* 커뮤니티 말머리 색 (라이트·다크에서 값이 달라서 아래 :root / .dark 의 변수를 가리킨다) */
+  --color-kind-notice: var(--kind-notice);
+  --color-kind-notice-soft: var(--kind-notice-soft);
+  --color-kind-notice-bar: var(--kind-notice-bar);
+  --color-kind-question: var(--kind-question);
+  --color-kind-question-soft: var(--kind-question-soft);
+  --color-kind-question-bar: var(--kind-question-bar);
+  --color-kind-free: var(--kind-free);
+  --color-kind-free-soft: var(--kind-free-soft);
+  --color-kind-free-bar: var(--kind-free-bar);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -51,73 +62,116 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------------------------------------------------------------------
+   색 팔레트. 기본은 라이트 모드이고, <html class="dark"> 이면 다크 모드다.
+   컴포넌트는 색 코드 대신 이름(bg-primary, text-muted-foreground …)만 쓰므로 여기만 바꾸면 전체가 바뀐다.
+   라이트: 따뜻한 오프화이트 바탕 + 검정 주색 + 연한 하늘색 강조
+   다크  : 거의 검정 바탕 + 파랑 주색
+   --------------------------------------------------------------------- */
 :root {
-  --background: #f4f6f8;
-  --foreground: #1f2f3a;
-  --card: oklch(1 0 0);
-  --card-foreground: #1f2f3a;
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #1d4ed8; /* 코발트 블루: 위쪽 바·버튼·강조 글자 */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: #edf2f5;
-  --secondary-foreground: #1d4ed8;
-  --muted: #eef2f5;
-  --muted-foreground: #5f6e7c;
-  --accent: #e9effd;
-  --accent-foreground: #1d4ed8;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #dce3e9;
-  --input: #c8d2db;
-  --ring: #7ea0e8;
+  color-scheme: light;
+  --background: #f5f5f1;
+  --foreground: #0b0f14;
+  --card: #ffffff;
+  --card-foreground: #0b0f14;
+  --popover: #ffffff;
+  --popover-foreground: #0b0f14;
+  --primary: #0b0f14; /* 버튼·링크·강조 글자: 검정 */
+  --primary-foreground: #ffffff;
+  --secondary: #ecece6;
+  --secondary-foreground: #0b0f14;
+  --muted: #eeeee8;
+  --muted-foreground: #5a6169;
+  --accent: #bcd9ff; /* 선택됨·강조 바탕: 연한 하늘색 */
+  --accent-foreground: #0b0f14;
+  --destructive: #d92d20;
+  --border: #e1e1da;
+  --input: #2a3038; /* 입력칸 테두리: 또렷한 짙은 선 */
+  --ring: #0b0f14; /* 입력칸을 눌렀을 때의 테두리: 검정 (진한 색은 쓰지 않는다) */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.5rem;
+  --radius: 1rem;
+  --school-navy: #0b0f14;
+  --school-gold: #bcd9ff;
   --sidebar: #ffffff;
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-foreground: #0b0f14;
+  --sidebar-primary: #0b0f14;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #bcd9ff;
+  --sidebar-accent-foreground: #0b0f14;
+  --sidebar-border: #e1e1da;
+  --sidebar-ring: #0b0f14;
+  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 질문=검정, 자유=회색.
+     soft=바탕, 이름만 붙은 것=그 위의 글자색, bar=왼쪽 띠·선택 고리 색 */
+  --kind-notice: #0b0f14;
+  --kind-notice-soft: #bcd9ff;
+  --kind-notice-bar: #bcd9ff;
+  --kind-question: #f5f5f1;
+  --kind-question-soft: #0b0f14;
+  --kind-question-bar: #0b0f14;
+  --kind-free: #3d444b;
+  --kind-free-soft: #e6e6df;
+  --kind-free-bar: #8a9082;
+  /* 시간표 수업 색: 띠 색이고, 칸 바탕은 이 색을 카드색에 조금 섞어 만든다 (.timetable-cell) */
+  --timetable-1: #7db4ff;
+  --timetable-2: #a99cf0;
+  --timetable-3: #5fbf9c;
+  --timetable-4: #e3ad4f;
+  --timetable-5: #ec8aa3;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  color-scheme: dark;
+  --background: #0b0f14;
+  --foreground: #f1f1ec;
+  --card: #141a21;
+  --card-foreground: #f1f1ec;
+  --popover: #141a21;
+  --popover-foreground: #f1f1ec;
+  --primary: #7db4ff; /* 다크에서는 파랑이 주색 */
+  --primary-foreground: #0b0f14;
+  --secondary: #1d252e;
+  --secondary-foreground: #f1f1ec;
+  --muted: #1a2129;
+  --muted-foreground: #98a2ad;
+  --accent: #172a45; /* 선택됨 바탕: 어두운 남색 */
+  --accent-foreground: #7db4ff;
+  --destructive: #f4695e;
+  --border: #252e38;
+  --input: #3b4551;
+  --ring: #7db4ff;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --school-navy: #f1f1ec;
+  --school-gold: #7db4ff;
+  --sidebar: #0f141a;
+  --sidebar-foreground: #f1f1ec;
+  --sidebar-primary: #7db4ff;
+  --sidebar-primary-foreground: #0b0f14;
+  --sidebar-accent: #172a45;
+  --sidebar-accent-foreground: #7db4ff;
+  --sidebar-border: #252e38;
+  --sidebar-ring: #7db4ff;
+  --kind-notice: #0b0f14;
+  --kind-notice-soft: #7db4ff;
+  --kind-notice-bar: #7db4ff;
+  --kind-question: #0b0f14;
+  --kind-question-soft: #f1f1ec;
+  --kind-question-bar: #f1f1ec;
+  --kind-free: #c9d0d8;
+  --kind-free-soft: #252e38;
+  --kind-free-bar: #56626f;
+  --timetable-1: #7db4ff;
+  --timetable-2: #b0a5ff;
+  --timetable-3: #6fd3ad;
+  --timetable-4: #f0bd62;
+  --timetable-5: #f497ae;
 }
 
 /* 역할은 명칭으로 구분하고 기본 색과 조작 방식은 일관되게 유지한다. */
@@ -136,41 +190,30 @@
   h2, h3 { letter-spacing: -0.025em; }
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
-  ::selection { background: #dbe6fd; color: #1b2b45; }
+  ::selection { background: var(--accent); color: var(--accent-foreground); }
 }
 
 @layer components {
   .surface { @apply rounded-xl border border-border bg-card text-card-foreground; }
-  .page-title { @apply text-2xl font-bold tracking-tight text-school-navy sm:text-[1.75rem]; }
-  .eyebrow { @apply mb-1 text-xs font-semibold tracking-wide text-muted-foreground; }
+  .page-title { @apply text-[1.75rem] font-extrabold tracking-tight text-school-navy sm:text-[2rem]; }
+  .eyebrow { @apply mb-1 text-xs font-bold tracking-wide text-muted-foreground; }
   .form-select { @apply h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-base text-card-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60 sm:text-sm; }
-  .school-panel { @apply min-w-0 overflow-hidden rounded-xl border border-border bg-card; }
+  .school-panel { @apply min-w-0 overflow-hidden rounded-2xl border border-border bg-card; }
   .school-panel-heading { @apply flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4 sm:px-5; }
-  .school-panel-title { @apply flex items-center gap-2 text-base font-semibold tracking-tight text-school-navy; }
-  .school-nav-item { @apply flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-active:bg-accent data-active:font-semibold data-active:text-primary; }
+  .school-panel-title { @apply flex items-center gap-2 text-base font-bold tracking-tight text-school-navy; }
+  .school-nav-item { @apply flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-active:bg-accent data-active:font-bold data-active:text-accent-foreground; }
   .school-bottom-nav { @apply fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-card pb-[env(safe-area-inset-bottom)]; }
-  .school-bottom-link { @apply relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground data-active:font-semibold data-active:text-primary; }
-  .school-bottom-link[data-active]::before { content: ""; @apply absolute top-0 h-0.5 w-8 rounded-full bg-primary; }
-  /* 위쪽 바: 코발트 바탕 + 흰 글자 (버튼·강조색과 같은 색). 지금 보는 메뉴는 흰 알약으로 표시한다. */
-  .school-topbar { @apply sticky top-0 z-30 border-b border-black/10 bg-primary text-white; }
-  .school-top-link { @apply flex h-10 shrink-0 items-center rounded-full px-4 text-[15px] font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-white data-active:bg-white data-active:text-primary; }
-  .skip-link { @apply fixed top-2 left-4 z-50 -translate-y-20 rounded-lg bg-school-navy px-4 py-3 text-sm text-white focus:translate-y-0; }
+  .school-bottom-link { @apply relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground data-active:font-bold data-active:text-foreground; }
+  .school-bottom-link[data-active]::before { content: ""; @apply absolute top-0 h-1 w-9 rounded-full bg-school-gold; }
+  /* 위쪽 바: 화면 바탕과 같은 색 + 얇은 아래 선. 지금 보는 메뉴는 파랑 알약으로 표시한다. */
+  .school-topbar { @apply sticky top-0 z-30 border-b bg-background/90 text-foreground backdrop-blur; }
+  .school-top-link { @apply flex h-10 shrink-0 items-center rounded-full px-4 text-[15px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-active:bg-accent data-active:font-bold data-active:text-accent-foreground; }
+  /* 시간표 수업 칸: --tt(수업 색)를 왼쪽 띠로, 카드색에 섞은 연한 색을 바탕으로 쓴다 */
+  .timetable-cell { border-left-color: var(--tt); background: color-mix(in oklab, var(--tt) 18%, var(--card)); color: var(--foreground); }
+  .dark .timetable-cell { background: color-mix(in oklab, var(--tt) 24%, var(--card)); }
+  .skip-link { @apply fixed top-2 left-4 z-50 -translate-y-20 rounded-lg bg-foreground px-4 py-3 text-sm text-background focus:translate-y-0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-}
-
-/* 커뮤니티 말머리 색: 학교 공지=벽돌빨강, 질문=강청색, 자유=차분한 금색. (사이트의 코발트와 어울리도록 채도를 낮췄다)
-   *-soft 는 연한 바탕, 이름만 붙은 것은 그 위의 글자색, *-bar 는 왼쪽 띠·테두리 강조색이다. */
-@theme inline {
-  --color-kind-notice: #9b2c2c;
-  --color-kind-notice-soft: #fbeceb;
-  --color-kind-notice-bar: #c0504a;
-  --color-kind-question: #1f4f8f;
-  --color-kind-question-soft: #e8eff9;
-  --color-kind-question-bar: #4f7fc4;
-  --color-kind-free: #7a5a0f;
-  --color-kind-free-soft: #fbf3dc;
-  --color-kind-free-bar: #b9891a;
 }

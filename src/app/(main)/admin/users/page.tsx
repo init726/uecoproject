@@ -8,6 +8,7 @@ import type { Profile } from "@/lib/types";
 import { displayLoginId } from "@/lib/username";
 import { cn } from "@/lib/utils";
 import { type UserRow, UsersTable } from "./users-table";
+import { PageHeader } from "@/components/page-header";
 
 const ROLE_FILTERS = [
   { value: "all", label: "전체" },
@@ -79,12 +80,15 @@ export default async function UsersPage(props: PageProps<"/admin/users">) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h2 className="font-mono text-xl font-bold">사용자 관리</h2>
-        <Link href="/admin/accounts/bulk" className="text-sm text-primary hover:underline">
-          학생 단체 발급 →
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="학교 관리"
+        title="사용자 관리"
+        actions={
+          <Link href="/admin/accounts/bulk" className="text-sm font-semibold text-primary hover:underline">
+            학생 단체 발급 →
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         {ROLE_FILTERS.map((f) => (

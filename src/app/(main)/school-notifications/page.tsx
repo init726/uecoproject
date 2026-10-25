@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/format";
 import { isMissingSchema } from "@/lib/schema-compat";
 import { ReadForm } from "./read-form";
+import { PageHeader } from "@/components/page-header";
 
 export default async function Notifications() {
   const client = await createClient();
@@ -20,11 +21,12 @@ export default async function Notifications() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="page-title">학교 알림</h2>
-        {!error && Boolean(data?.length) && <ReadForm />}
-      </div>
-      <p className="text-xs text-muted-foreground">최근 알림 100개를 표시합니다. 과제 마감은 홈과 할 일에서 확인하세요.</p>
+      <PageHeader
+        eyebrow="알림"
+        title="학교 알림"
+        description="최근 알림 100개를 표시합니다. 과제 마감은 홈과 할 일에서 확인하세요."
+        actions={!error && Boolean(data?.length) && <ReadForm />}
+      />
       {error ? (
         <section className="school-panel space-y-3 p-5" role="status">
           <p className="text-sm font-medium">{unavailable ? "학교 알림을 준비하고 있습니다." : "알림을 불러오지 못했습니다."}</p>

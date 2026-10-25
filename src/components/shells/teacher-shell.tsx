@@ -7,6 +7,7 @@ import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const ITEM = "school-nav-item";
 
@@ -22,7 +23,7 @@ export function TeacherShell({
 }) {
   return (
     <div data-role="teacher" className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-t-[3px] border-t-primary border-r bg-sidebar lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-sidebar lg:flex">
         <div className="flex h-[4.5rem] items-center border-b px-5">
           <SchoolBrand subtitle="교직원 공간" />
         </div>
@@ -46,22 +47,26 @@ export function TeacherShell({
             클래스 만들기
           </NavLink>
         </nav>
-        <div className="border-t p-4">
-          <NavLink href="/me" className={ITEM}>
+        <div className="flex items-center gap-2 border-t p-4">
+          <NavLink href="/me" className={`${ITEM} flex-1`}>
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-school-navy">{profile.name.slice(0, 1)}</span>
             <span className="min-w-0"><span className="block truncate font-medium text-foreground">{profile.name} 선생님</span><span className="block text-xs">{profile.subject} · 내 정보</span></span>
           </NavLink>
+          <ThemeToggle />
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="school-topbar flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:hidden">
           <SchoolBrand tone="light" subtitle="교직원" />
-          <Suspense fallback={null}><NotificationLink /></Suspense>
-          <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
-            <span className="block truncate text-sm font-semibold">{profile.name} 선생님</span>
-            <span className="block text-xs text-white/80">{profile.subject}</span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-3">
+            <Suspense fallback={null}><NotificationLink compact /></Suspense>
+            <Link href="/me" className="min-w-0 rounded-sm text-right">
+              <span className="block truncate text-sm font-bold">{profile.name} 선생님</span>
+              <span className="block text-xs text-muted-foreground">{profile.subject}</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </header>
         <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
         <nav aria-label="모바일 교사 메뉴" className="school-bottom-nav grid-cols-4 lg:hidden">

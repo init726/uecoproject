@@ -6,6 +6,7 @@ import { NavLink } from "@/components/shells/nav-link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import { SchoolBrand } from "@/components/school-brand";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/admin", label: "대시보드", icon: LayoutDashboard, exact: true },
@@ -35,7 +36,7 @@ export function AdminShell({
 }) {
   return (
     <div data-role="admin" className="flex min-h-screen bg-background text-foreground">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-t-[3px] border-t-primary border-r bg-sidebar lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-sidebar lg:flex">
         <div className="flex h-[4.5rem] items-center border-b px-5">
           <SchoolBrand href="/admin" subtitle="학교 관리 공간" />
         </div>
@@ -53,11 +54,12 @@ export function AdminShell({
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-4">
-          <NavLink href="/me" className={ITEM}>
+        <div className="flex items-center gap-2 border-t p-4">
+          <NavLink href="/me" className={`${ITEM} flex-1`}>
             <User className="size-4" />
             <span className="truncate">{profile.name}</span>
           </NavLink>
+          <ThemeToggle />
         </div>
       </aside>
 
@@ -65,10 +67,13 @@ export function AdminShell({
         <header className="school-topbar lg:hidden">
           <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
             <SchoolBrand href="/admin" tone="light" subtitle="관리자" />
-            <Link href="/me" className="min-w-0 rounded-sm text-right focus-visible:outline-white">
-              <span className="block truncate text-sm font-semibold">{profile.name}</span>
-              <span className="block text-xs text-white/80">내 정보</span>
-            </Link>
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/me" className="min-w-0 rounded-sm text-right">
+                <span className="block truncate text-sm font-bold">{profile.name}</span>
+                <span className="block text-xs text-muted-foreground">내 정보</span>
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
           <nav aria-label="모바일 관리자 메뉴" className="flex gap-1 overflow-x-auto px-3 pb-3 sm:px-5">
             {NAV.map(({ href, label, exact }) => (
@@ -76,7 +81,7 @@ export function AdminShell({
                 {label}
                 {href === "/community" && (
                   <Suspense fallback={null}>
-                    <CommunityBadge tone="onPrimary" />
+                    <CommunityBadge />
                   </Suspense>
                 )}
               </NavLink>

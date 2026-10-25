@@ -168,7 +168,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
               href={href({ open: !openOnly })}
               className={cn(
                 "ml-2 flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground hover:bg-muted",
-                openOnly && "border-primary bg-accent font-semibold text-primary hover:bg-accent",
+                openOnly && "border-foreground font-bold text-foreground ring-1 ring-foreground",
               )}
               aria-pressed={openOnly}
             >
@@ -189,7 +189,7 @@ export default async function CommunityPage(props: PageProps<"/community">) {
                 aria-current={sort === s.value ? "true" : undefined}
                 className={cn(
                   "flex min-h-8 items-center rounded-md px-2.5 text-muted-foreground hover:bg-muted hover:text-foreground",
-                  sort === s.value && "bg-accent font-semibold text-primary hover:bg-accent hover:text-primary",
+                  sort === s.value && "bg-muted font-bold text-foreground",
                 )}
               >
                 {s.label}

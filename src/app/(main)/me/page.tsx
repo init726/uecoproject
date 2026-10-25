@@ -6,6 +6,7 @@ import { ROLE_LABEL } from "@/lib/constants";
 import { displayLoginId } from "@/lib/username";
 import { PasswordForm } from "./password-form";
 import { UsernameForm } from "./username-form";
+import { PageHeader } from "@/components/page-header";
 
 export default async function MePage() {
   const [profile, user] = await Promise.all([getProfile(), getAuthUser()]);
@@ -21,7 +22,7 @@ export default async function MePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
-      <h2 className="text-2xl font-bold">내 정보</h2>
+      <PageHeader eyebrow="계정" title="내 정보" />
       <Card>
         <CardContent>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">

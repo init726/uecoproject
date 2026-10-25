@@ -10,6 +10,7 @@ import type { Assignment, Submission } from "@/lib/types";
 import { FileSubmitForm } from "./file-submit-form";
 import { SubmissionControls, FeedbackForm } from "./submission-controls";
 import { TextSubmitForm } from "./text-submit-form";
+import { PageHeader } from "@/components/page-header";
 
 type Member = {
   student_id: string;
@@ -66,25 +67,28 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <Link
-          href={`/classes/${assignment.class.id}`}
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← {assignment.class.name}
-        </Link>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{assignment.type === "file" ? "파일" : "글"}</Badge>
-          <h2 className="text-xl font-bold">{assignment.title}</h2>
-        </div>
-        <p className={overdue ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
-          마감 {formatDateTime(assignment.due_at)}
-          {overdue && " (마감됨)"}
-          {" · "}
-          {assignment.allow_late ? "마감 후 제출 가능(지각 표시)" : "마감 후 제출 불가"}
-          {assignment.max_chars && ` · ${assignment.max_chars}자 이내`}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={
+          <Link href={`/classes/${assignment.class.id}`} className="hover:text-foreground">
+            ← {assignment.class.name}
+          </Link>
+        }
+        title={
+          <span className="flex items-center gap-3">
+            <Badge variant="outline">{assignment.type === "file" ? "파일" : "글"}</Badge>
+            {assignment.title}
+          </span>
+        }
+        description={
+          <span className={overdue ? "text-destructive" : undefined}>
+            마감 {formatDateTime(assignment.due_at)}
+            {overdue && " (마감됨)"}
+            {" · "}
+            {assignment.allow_late ? "마감 후 제출 가능(지각 표시)" : "마감 후 제출 불가"}
+            {assignment.max_chars && ` · ${assignment.max_chars}자 이내`}
+          </span>
+        }
+      />
 
       {(assignment.description || assignment.rubric) && (
         <div className="grid gap-3 sm:grid-cols-2">

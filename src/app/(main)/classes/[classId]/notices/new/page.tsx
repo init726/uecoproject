@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NoticeForm } from "./notice-form";
+import { PageHeader } from "@/components/page-header";
 
 export default async function NewNoticePage(props: PageProps<"/classes/[classId]/notices/new">) {
   const { classId } = await props.params;
@@ -17,7 +18,7 @@ export default async function NewNoticePage(props: PageProps<"/classes/[classId]
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
-      <h2 className="text-xl font-bold">공지 쓰기 · {klass.name}</h2>
+      <PageHeader eyebrow={klass.name} title="공지 쓰기" />
       <NoticeForm classId={classId} />
     </div>
   );

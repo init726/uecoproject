@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { smsReady } from "@/lib/sms";
 import { createAdminClient, hasAdminKey } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/page-header";
 
 const TABLES = ["profiles", "classes", "class_slots", "enrollments", "notices", "assignments", "submissions", "semesters", "submission_feedback", "surveys", "survey_responses", "learning_notifications", "account_recovery_requests", "ai_requests"];
 
@@ -94,8 +95,8 @@ export default async function SystemPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 font-mono">
-      <h2 className="text-xl font-bold">시스템</h2>
+    <div className="flex flex-col gap-6">
+      <PageHeader eyebrow="개발자" title="시스템" description="서버 설정과 데이터베이스 상태를 점검합니다." />
 
       <section className="flex flex-col gap-2">
         <h3 className="text-sm text-muted-foreground">상태 점검</h3>

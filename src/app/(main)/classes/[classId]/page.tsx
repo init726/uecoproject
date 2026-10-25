@@ -21,6 +21,7 @@ import { formatDateTime, formatSlots, isPast } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Assignment, ClassRow, ClassSlot, Notice } from "@/lib/types";
 import { deleteNotice, regenerateInviteCode, removeStudent } from "./actions";
+import { PageHeader } from "@/components/page-header";
 
 type ClassDetail = ClassRow & {
   class_slots: ClassSlot[];
@@ -99,23 +100,27 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <p className="eyebrow">클래스</p><h2 className="page-title">{klass.name}</h2>
-        <p className="text-sm text-muted-foreground">
-          {[
-            klass.semester,
-            formatSlots(klass.class_slots),
-            klass.room,
-            klass.teacher ? `${klass.teacher.name} 선생님` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      </div>
-
-      {isTeacher && (
-        <p className="text-sm text-muted-foreground">{klass.import_key ? "학교 배정 수업입니다. 수강생과 시간표가 엑셀 등록 자료에서 연결됐습니다." : "초대코드로 학생을 등록할 수 있습니다."}</p>
-      )}
+      <PageHeader
+        eyebrow="클래스"
+        title={klass.name}
+        description={
+          <>
+            <p>
+              {[
+                klass.semester,
+                formatSlots(klass.class_slots),
+                klass.room,
+                klass.teacher ? `${klass.teacher.name} 선생님` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            {isTeacher && (
+              <p className="mt-1 text-xs">{klass.import_key ? "학교 배정 수업입니다. 수강생과 시간표가 엑셀 등록 자료에서 연결됐습니다." : "초대코드로 학생을 등록할 수 있습니다."}</p>
+            )}
+          </>
+        }
+      />
       {isTeacher && (
         <Card size="sm">
           <CardContent className="flex flex-wrap items-center gap-3">

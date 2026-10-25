@@ -34,7 +34,7 @@ export function PostForm({
             {kinds.map((kind, i) => (
               <label
                 key={kind}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border bg-card px-4 text-sm transition-colors hover:bg-muted has-checked:border-primary has-checked:bg-accent has-checked:font-semibold has-checked:text-primary"
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border bg-card px-4 text-sm text-muted-foreground transition-colors hover:bg-muted has-checked:border-foreground has-checked:font-bold has-checked:text-foreground has-checked:ring-1 has-checked:ring-foreground"
               >
                 <input type="radio" name="kind" value={kind} defaultChecked={i === 0} className="accent-primary" />
                 {POST_KIND_LABEL[kind]}

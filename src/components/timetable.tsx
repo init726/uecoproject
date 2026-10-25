@@ -8,12 +8,13 @@ import type { ClassSlot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export type TimetableClass = { id: string; name: string; room: string | null; class_slots: ClassSlot[] };
+// 수업마다 색 하나. 실제 색 값은 globals.css 의 --timetable-1~5 (라이트·다크 따로)
 const COLORS = [
-  "border-l-[#5f8f93] bg-[#eaf3f4] text-[#2b4f53]",
-  "border-l-[#71899d] bg-[#edf2f6] text-[#354e63]",
-  "border-l-[#7f8bb0] bg-[#eef0f7] text-[#3f4a6e]",
-  "border-l-[#91849f] bg-[#f2eff5] text-[#594b68]",
-  "border-l-[#6a9488] bg-[#ebf4f1] text-[#2f5248]",
+  "timetable-cell [--tt:var(--timetable-1)]",
+  "timetable-cell [--tt:var(--timetable-2)]",
+  "timetable-cell [--tt:var(--timetable-3)]",
+  "timetable-cell [--tt:var(--timetable-4)]",
+  "timetable-cell [--tt:var(--timetable-5)]",
 ];
 function classColor(id: string) {
   return COLORS[[...id].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0) % COLORS.length];
@@ -36,7 +37,7 @@ export function Timetable({ classes, semester, today = null }: { classes: Timeta
         <p className="mt-1 text-xs text-muted-foreground">{semester ? `${semester} · ` : ""}월–금, 1–7교시</p></div>
       <div role="group" aria-label="시간표 보기 방식" className="flex rounded-lg border bg-muted p-0.5 sm:hidden">
         {([['day','요일별'],['week','주간']] as const).map(([value,label]) => <button key={value} type="button" aria-pressed={view===value}
-          onClick={() => setView(value)} className={cn("min-h-9 rounded-md px-3 text-xs font-medium",view===value ? "bg-card text-primary shadow-sm" : "text-muted-foreground")}>{label}</button>)}
+          onClick={() => setView(value)} className={cn("min-h-9 rounded-md px-3 text-xs font-medium",view===value ? "bg-card font-bold text-foreground ring-1 ring-border" : "text-muted-foreground")}>{label}</button>)}
       </div>
       <span className="hidden text-xs text-muted-foreground sm:block">수업을 선택하면 클래스로 이동합니다</span>
     </div>
@@ -56,7 +57,7 @@ export function Timetable({ classes, semester, today = null }: { classes: Timeta
             <div className="flex w-8 shrink-0 flex-col justify-center text-center"><span className="text-base font-semibold tabular-nums text-school-navy">{period}</span><span className="text-[10px] text-muted-foreground">교시</span></div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">{here.length ? here.map(c => <Link key={c.id} href={`/classes/${c.id}`}
               aria-label={`${DAYS[selectedDay-1]}요일 ${period}교시 ${c.name}`}
-              className={cn("flex min-h-12 flex-1 flex-wrap items-center justify-between gap-1 rounded-md border-l-[3px] px-3 py-2",here.length>1?"border-l-destructive bg-red-50 text-red-950":classColor(c.id))}>
+              className={cn("flex min-h-12 flex-1 flex-wrap items-center justify-between gap-1 rounded-md border-l-[3px] px-3 py-2",here.length>1?"timetable-cell [--tt:var(--destructive)]":classColor(c.id))}>
               <span className="min-w-0 text-sm font-semibold [overflow-wrap:anywhere]">{c.name}</span>
               <span className="text-xs opacity-80">{here.length>1?"시간 겹침":c.room}</span>
             </Link>) : <span className="flex h-full min-h-12 items-center px-3 text-xs text-muted-foreground/70">등록된 수업 없음</span>}</div>
@@ -77,7 +78,7 @@ export function Timetable({ classes, semester, today = null }: { classes: Timeta
             const here=cells.get(`${index+1}-${period}`)??[];
             return <td key={day} className={cn("h-[4.75rem] border-l p-0.5 align-top sm:h-20 sm:p-1",today===index+1&&"bg-accent/20")}>
               {here.map(c=><Link key={c.id} href={`/classes/${c.id}`} aria-label={`${day}요일 ${period}교시 ${c.name}`}
-                className={cn("mb-0.5 block rounded-md border-l-2 px-1 py-2 text-left leading-snug transition-opacity hover:opacity-75 sm:px-2",here.length>1?"border-l-destructive bg-red-50 text-red-950":classColor(c.id))}>
+                className={cn("mb-0.5 block rounded-md border-l-2 px-1 py-2 text-left leading-snug transition-opacity hover:opacity-75 sm:px-2",here.length>1?"timetable-cell [--tt:var(--destructive)]":classColor(c.id))}>
                 {here.length>1&&<span className="mb-0.5 block text-[10px] font-medium text-destructive">시간 겹침</span>}
                 <span className="block font-semibold [overflow-wrap:anywhere]">{c.name}</span>
                 {c.room&&<span className="mt-1 block text-[10px] opacity-80 [overflow-wrap:anywhere]">{c.room}</span>}
