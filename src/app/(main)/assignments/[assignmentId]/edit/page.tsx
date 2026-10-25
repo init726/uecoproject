@@ -25,18 +25,20 @@ export default async function EditAssignmentPage(props: PageProps<"/assignments/
     .maybeSingle<EditableAssignment>(), ["purpose"]);
   if (error) throw new Error("과제를 불러오지 못했어요.");
   if (!assignment?.class || assignment.class.teacher_id !== profile.id) notFound();
+  const dueLocal = isoToKstLocal(assignment.due_at);
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <PageHeader eyebrow={assignment.class.name} title="과제 수정" description="이미 낸 제출물은 그대로 남아요." />
       <AssignmentForm
         classId={assignment.class_id}
+        year={Number(dueLocal.slice(0, 4))}
         initial={{
           id: assignment.id,
           title: assignment.title,
           description: assignment.description,
           rubric: assignment.rubric,
-          due_at: isoToKstLocal(assignment.due_at),
+          due_at: dueLocal,
           type: assignment.type,
           max_chars: assignment.max_chars,
           allow_late: assignment.allow_late,

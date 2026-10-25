@@ -30,7 +30,8 @@ export type AssignmentInitial = {
 };
 
 // 과제 내기와 과제 고치기가 함께 쓰는 폼. 고칠 때는 제출 방식과 자기평가서 여부를 바꿀 수 없다.
-export function AssignmentForm({ classId, initial }: { classId: string; initial?: AssignmentInitial }) {
+// year: 마감 연도. 새 과제는 올해, 고칠 때는 원래 마감 연도로 고정한다.
+export function AssignmentForm({ classId, year, initial }: { classId: string; year: number; initial?: AssignmentInitial }) {
   const [state, formAction, pending] = useActionState(
     initial ? updateAssignment.bind(null, initial.id, initial.type) : createAssignment.bind(null, classId),
     {},
@@ -88,7 +89,7 @@ export function AssignmentForm({ classId, initial }: { classId: string; initial?
         </p>
       </div>
 
-      <DueDateField name="due_at" defaultValue={initial?.due_at} onChange={setDue} />
+      <DueDateField name="due_at" year={year} defaultValue={initial?.due_at} onChange={setDue} />
       <DeadlineLoad classId={classId} day={due.slice(0,10)} />
 
       <div className="grid grid-cols-2 gap-3">

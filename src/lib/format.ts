@@ -26,6 +26,11 @@ export function isoToKstLocal(iso: string) {
   return new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
 }
 
+// 지금 한국 시간 기준 연도 (새 과제의 마감 연도로 쓴다)
+export function kstYear() {
+  return Number(new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric" }).format(new Date()));
+}
+
 export function isPast(iso: string) {
   return new Date(iso).getTime() < Date.now();
 }

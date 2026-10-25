@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
+import { kstYear } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { AssignmentForm } from "./assignment-form";
 import { PageHeader } from "@/components/page-header";
@@ -21,7 +22,7 @@ export default async function NewAssignmentPage(
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
       <PageHeader eyebrow={klass.name} title="과제 내기" />
-      <AssignmentForm classId={classId} />
+      <AssignmentForm classId={classId} year={kstYear()} />
     </div>
   );
 }
