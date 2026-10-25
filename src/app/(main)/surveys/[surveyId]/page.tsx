@@ -5,6 +5,9 @@ import {createClient} from "@/lib/supabase/server";
 import {formatDateTime,isPast} from "@/lib/format";
 import {optionCounts,type Survey,type SurveyResults} from "@/lib/surveys";
 import {SurveyResponseForm,SurveyClose,SurveySummary} from "@/components/survey-forms";
+// 이 화면의 AI 서버 동작(학교 AI 컴퓨터의 Ollama)은 수십 초 걸릴 수 있다. 배포 환경의 실행 시간 제한을 늘린다.
+export const maxDuration = 150;
+
 export default async function SurveyPage(props:PageProps<"/surveys/[surveyId]">) {
  const {surveyId}=await props.params;const client=await createClient();
  // 1단계: 내 정보와 설문을 동시에. (설문을 읽어야 어느 수업인지 알 수 있다)

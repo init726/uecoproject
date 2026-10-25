@@ -37,6 +37,17 @@ test("Ollama uses local chat API without an external API key",async()=>{
  });
  assert.ok(called);assert.equal(text,"구체적인 활동을 보완해 보세요.");
 });
+test("remote Ollama gateway requires HTTPS and sends the token",async()=>{
+ const {requestOllama,ollamaConfiguration}=await import("../src/lib/ollama");
+ assert.throws(()=>ollamaConfiguration({OLLAMA_MODEL:"m",OLLAMA_BASE_URL:"https://ai.example.ts.net"}),"remote without token");
+ assert.throws(()=>ollamaConfiguration({OLLAMA_MODEL:"m",OLLAMA_BASE_URL:"http://ai.example.ts.net",OLLAMA_API_KEY:"k"}),"remote over plain http");
+ let auth="";
+ await requestOllama("s","u",{OLLAMA_MODEL:"m",OLLAMA_BASE_URL:"https://ai.example.ts.net",OLLAMA_API_KEY:"secret-token"},async(url,init)=>{
+  assert.equal(url,"https://ai.example.ts.net/api/chat");auth=(init?.headers as Record<string,string>).Authorization;
+  return new Response(JSON.stringify({done:true,done_reason:"stop",message:{content:"ok"}}),{status:200});
+ });
+ assert.equal(auth,"Bearer secret-token");
+});
 test("Ollama rejects missing model, cloud model, incomplete output and server errors",async()=>{
  const {requestOllama,ollamaConfiguration}=await import("../src/lib/ollama");
  assert.equal(ollamaConfiguration({}),null);assert.throws(()=>ollamaConfiguration({OLLAMA_MODEL:"model:cloud"}));

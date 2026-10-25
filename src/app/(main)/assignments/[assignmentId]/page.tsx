@@ -29,6 +29,9 @@ type AssignmentDetail = Assignment & {
 const SUBMISSION_COLUMNS =
   "id, assignment_id, student_id, version, file_path, file_name, file_size, content, submitted_at, is_late, canceled_at";
 
+// 이 화면의 AI 서버 동작(학교 AI 컴퓨터의 Ollama)은 수십 초 걸릴 수 있다. 배포 환경의 실행 시간 제한을 늘린다.
+export const maxDuration = 150;
+
 export default async function AssignmentPage(props: PageProps<"/assignments/[assignmentId]">) {
   const { assignmentId } = await props.params;
   const supabase = await createClient();

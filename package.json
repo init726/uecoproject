@@ -12,7 +12,7 @@
     "issue-account": "node --env-file=.env.local scripts/issue-account.mjs",
     "test:import": "node --import tsx --test tests/school-import*.test.ts",
     "test:workflows": "node supabase/test-workflows.mjs && node --import tsx --test tests/workflows.test.ts",
-    "ai:serve": "node scripts/serve-ai.mjs"
+    "ai:serve": "node --env-file-if-exists=.env.local scripts/serve-ai.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
