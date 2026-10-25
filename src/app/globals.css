@@ -53,6 +53,9 @@
   --color-kind-free: var(--kind-free);
   --color-kind-free-soft: var(--kind-free-soft);
   --color-kind-free-bar: var(--kind-free-bar);
+  /* 커뮤니티에서 선생님이 쓴 글·댓글 표시 (soft=바탕, 이름만=글자색) */
+  --color-teacher: var(--teacher);
+  --color-teacher-soft: var(--teacher-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -104,7 +107,7 @@
   --sidebar-accent-foreground: #0b0f14;
   --sidebar-border: #e1e1da;
   --sidebar-ring: #0b0f14;
-  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 질문=검정, 자유=회색.
+  /* 말머리: 사이트 테마색으로 구분한다. 학교 공지=연한 하늘색, 궁금해요=검정, 이야기=회색.
      soft=바탕, 이름만 붙은 것=그 위의 글자색, bar=왼쪽 띠·선택 고리 색 */
   --kind-notice: #0b0f14;
   --kind-notice-soft: #bcd9ff;
@@ -115,6 +118,8 @@
   --kind-free: #3d444b;
   --kind-free-soft: #e6e6df;
   --kind-free-bar: #8a9082;
+  --teacher: #7a4b00;
+  --teacher-soft: #fdf0d5;
   /* 시간표 수업 색: 띠 색이고, 칸 바탕은 이 색을 카드색에 조금 섞어 만든다 (.timetable-cell) */
   --timetable-1: #7db4ff;
   --timetable-2: #a99cf0;
@@ -167,6 +172,8 @@
   --kind-free: #c9d0d8;
   --kind-free-soft: #252e38;
   --kind-free-bar: #56626f;
+  --teacher: #f0bd62;
+  --teacher-soft: #33280f;
   --timetable-1: #7db4ff;
   --timetable-2: #b0a5ff;
   --timetable-3: #6fd3ad;

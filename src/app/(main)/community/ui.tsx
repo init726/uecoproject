@@ -24,7 +24,7 @@ export function EmptyState({ title, detail }: { title: string; detail: string })
   );
 }
 
-// 말머리별 색: 학교 공지=빨강, 질문=파랑, 자유=노랑. (색 이름은 globals.css 의 kind-* 에 있다)
+// 말머리별 색: 학교 공지=하늘색, 궁금해요=검정, 이야기=회색. (색 이름은 globals.css 의 kind-* 에 있다)
 // Tailwind 가 클래스를 찾을 수 있게 이름을 통째로 적어 둔다.
 const KIND_STYLE = {
   notice: {
@@ -89,11 +89,18 @@ export function StatusBadge({ status }: { status: ContentStatus }) {
   return <Badge variant="destructive">{CONTENT_STATUS_LABEL[status]}</Badge>;
 }
 
+// 작성자. 학생은 "학번 이름"(서버가 붙인다), 선생님은 따뜻한 색 알약으로 바로 구분되게 한다.
 export function AuthorLine({ name, role, createdAt }: { name: string; role: Role; createdAt: string }) {
   return (
     <>
-      <span className="font-medium text-foreground">{name}</span>
-      <span>{ROLE_LABEL[role]}</span>
+      {role === "teacher" ? (
+        <span className="rounded-full bg-teacher-soft px-2 py-0.5 font-semibold text-teacher">{name} 선생님</span>
+      ) : (
+        <>
+          <span className="font-medium text-foreground">{name}</span>
+          <span>{ROLE_LABEL[role]}</span>
+        </>
+      )}
       <span>{formatDateTime(createdAt)}</span>
     </>
   );
@@ -120,6 +127,7 @@ export function PostRow({ post }: { post: RowPost }) {
       className={cn(
         "group flex min-w-0 items-start gap-3 border-l-4 p-4 transition-colors hover:bg-accent/40 sm:px-5",
         KIND_STYLE[post.kind].bar,
+        post.author_role === "teacher" && "bg-teacher-soft/70",
         post.pinned && "bg-accent/40",
       )}
     >

@@ -18,6 +18,7 @@
 2. `supabase/community-v2.sql`
 3. `supabase/community-v3.sql`
 4. `supabase/community-v4.sql`
+5. `supabase/community-v5.sql` (학생 글·댓글을 "학번 이름" 실명으로 표시, 이미 쓴 글도 맞춤)
 
 기존 DB에는 적용하지 않은 업데이트만 순서대로 실행한다. 초기 SQL은 재실행하지 않는다. 현재 연결된 DB는 커뮤니티 테이블과 최신 RPC 준비를 확인했으며 데이터를 변경하지 않았다. 수업용 `learning_notifications`와 커뮤니티용 `notifications`는 별도로 유지한다.
 

@@ -93,17 +93,18 @@ const insertPost = (uid, kind, title = "제목", body = "본문", extra = "") =>
 
 // --- 글 작성 규칙 ---
 const p1 = (await insertPost(S1, "question", "수학 질문", "이거 어떻게 풀어요?")).rows[0];
-ok(p1.status === "published" && p1.author_name === "학생1" && p1.author_role === "student", "student writes a question; name/role filled by server");
-ok(!("student_no" in p1) && !JSON.stringify(p1).includes("20301"), "post does not carry student number");
+ok(p1.status === "published" && p1.author_name === "20301 학생1" && p1.author_role === "student", "student writes a question; real name (학번 이름)/role filled by server");
+ok(!("student_no" in p1), "post has no separate student number column");
 const spoof = (await q(S1, `insert into public.posts (author_id, kind, title, body, author_name, author_role, status, created_at)
   values ($1, 'free', '위조', '본문', '관리자', 'admin', 'review', '2000-01-01') returning *`, [S1])).rows[0];
-ok(spoof.author_name === "학생1" && spoof.author_role === "student" && spoof.status === "published" && spoof.created_at.getFullYear() > 2000,
+ok(spoof.author_name === "20301 학생1" && spoof.author_role === "student" && spoof.status === "published" && spoof.created_at.getFullYear() > 2000,
   "spoofed name/role/status/time are overwritten");
 const forged = (await q(S2, "insert into public.posts (author_id, kind, title, body) values ($1, 'free', 'a', 'b') returning author_id, author_name", [S1])).rows[0];
-ok(forged.author_id === S2 && forged.author_name === "학생2", "post forged as another user is stored under the real author");
+ok(forged.author_id === S2 && forged.author_name === "20302 학생2", "post forged as another user is stored under the real author");
 await expectError(insertPost(S1, "notice", "가짜 공지", "x"), "student cannot write school notice", "관리자만");
 await expectError(insertPost(T, "notice", "교사 공지", "x"), "teacher cannot write school notice", "관리자만");
 ok((await insertPost(T, "free", "교사 자유글", "안녕")).rows.length === 1, "approved teacher writes a free post");
+ok((await q(T, "select author_name from public.posts where author_id = $1", [T])).rows.every((r) => r.author_name === "김교사"), "teacher posts show the name only (no student number)");
 await expectError(insertPost(T2, "free", "미승인", "x"), "unapproved teacher cannot write", "승인");
 await expectError(insertPost(A, "question", "관리자 질문", "x"), "admin cannot write a question", "공지만");
 await expectError(insertPost(S1, "free", "   ", "x"), "blank title rejected");
@@ -133,7 +134,7 @@ await expectError(q(S1, "delete from public.posts where id = $1", [p1.id]), "dir
 
 // --- 댓글 ---
 const c1 = (await q(S2, "insert into public.comments (post_id, author_id, body) values ($1, $2, '이렇게 풀어요') returning *", [p1.id, S2])).rows[0];
-ok(c1.author_name === "학생2" && c1.status === "published", "comment author/status filled by server");
+ok(c1.author_name === "20302 학생2" && c1.status === "published", "comment author/status filled by server");
 ok(!("parent_id" in c1), "comments are single-level (no parent column)");
 const forgedC = (await q(S2, "insert into public.comments (post_id, author_id, body) values ($1, $2, 'x') returning author_id", [p1.id, S3])).rows[0];
 ok(forgedC.author_id === S2, "comment forged as another user is stored under the real author");
@@ -260,7 +261,7 @@ const notes = (uid) => q(uid, "select * from public.notifications order by creat
 const np = (await insertPost(N1, "question", "알림 테스트 질문 제목", "본문")).rows[0];
 await q(N2, "insert into public.comments (post_id, author_id, body) values ($1, $2, '답변이에요') returning id", [np.id, N2]);
 let n1 = await notes(N1);
-ok(n1.length === 1 && n1[0].kind === "comment" && n1[0].actor_name === "알림댓글러" && n1[0].excerpt === "알림 테스트 질문 제목" && n1[0].read_at === null,
+ok(n1.length === 1 && n1[0].kind === "comment" && n1[0].actor_name === "20402 알림댓글러" && n1[0].excerpt === "알림 테스트 질문 제목" && n1[0].read_at === null,
   "post author is notified of a new comment (actor, excerpt, unread)");
 await q(N1, "insert into public.comments (post_id, author_id, body) values ($1, $2, '내 글에 내가 단 댓글')", [np.id, N1]);
 ok((await notes(N1)).length === 1, "own comment on own post sends no notification");
@@ -399,7 +400,7 @@ await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]);
 ok((await accepted(qq.id)) === ans1, "author accepts a comment -> question is solved");
 ok((await q(Q4, "select accepted_comment_id from public.posts where id = $1", [qq.id])).rows[0].accepted_comment_id === ans1, "everyone sees the accepted answer");
 let aNotes = (await notes(Q2)).filter((n) => n.kind === "accepted");
-ok(aNotes.length === 1 && aNotes[0].target_type === "comment" && aNotes[0].comment_id === ans1 && aNotes[0].actor_name === "질문자" && aNotes[0].excerpt === "채택 테스트 질문", "answer author is notified of the acceptance");
+ok(aNotes.length === 1 && aNotes[0].target_type === "comment" && aNotes[0].comment_id === ans1 && aNotes[0].actor_name === "20901 질문자" && aNotes[0].excerpt === "채택 테스트 질문", "answer author is notified of the acceptance");
 await q(Q1, "select public.accept_comment($1, $2)", [qq.id, ans1]);
 ok((await notes(Q2)).filter((n) => n.kind === "accepted").length === 1, "re-accepting the sameStamp comment does not notify again");
 
@@ -530,7 +531,7 @@ ok((await kindsOf(P2, partPost.id)).length === 0, "the commenter is not notified
 const tC2 = await cm4(P3, partPost.id, "참여자2의 댓글");
 ok((await kindsOf(P1, partPost.id)).join() === "comment,comment", "author gets another 'comment'");
 const p2n = (await notes(P2)).filter((n) => n.post_id === partPost.id);
-ok(p2n.length === 1 && p2n[0].kind === "reply" && p2n[0].actor_name === "참여자2" && p2n[0].excerpt === "참여자 알림 테스트".replace("참여자 알림", "참여 알림") && p2n[0].comment_id === tC2, "earlier commenter gets a 'reply' notification (actor + title)");
+ok(p2n.length === 1 && p2n[0].kind === "reply" && p2n[0].actor_name === "21003 참여자2" && p2n[0].excerpt === "참여자 알림 테스트".replace("참여자 알림", "참여 알림") && p2n[0].comment_id === tC2, "earlier commenter gets a 'reply' notification (actor + title)");
 ok((await kindsOf(P3, partPost.id)).length === 0, "the new commenter is not notified");
 ok((await kindsOf(P5, partPost.id)).length === 0, "people who never commented are not notified");
 ok(!(await kindsOf(P1, partPost.id)).includes("reply"), "the post author never gets a 'reply' (only 'comment')");
@@ -606,6 +607,17 @@ await cm4(loneUser, dropPost.id, "곧 사라질 댓글");
 ok((await stats(dropPost.id)).comment_count === 1, "count includes the comment");
 await db.query("delete from auth.users where id = $1", [loneUser]);
 ok((await stats(dropPost.id)).comment_count === 0, "deleting an account re-counts the post");
+
+// --- v5: 학생은 항상 "학번 이름" 실명 ---
+const realPost = (await insertPost(S3, "free", "실명 확인", "본문")).rows[0];
+ok(realPost.author_name === "20303 학생3", "new student post shows 학번 + 이름");
+await expectError(q(S3, "update public.posts set author_name = '익명' where id = $1", [realPost.id]), "student cannot rename themselves on a post", "제목과 내용만");
+// v5 이전에 쓴 글(이름만 저장)이 파일을 다시 실행하면 실명으로 맞춰지고, 두 번 실행해도 같다
+await db.query("update public.posts set author_name = '학생3' where id = $1", [realPost.id]);
+await db.exec(readFileSync("supabase/community-v5.sql", "utf8"));
+await db.exec(readFileSync("supabase/community-v5.sql", "utf8"));
+ok((await db.query("select author_name from public.posts where id = $1", [realPost.id])).rows[0].author_name === "20303 학생3", "re-running v5 backfills old student posts (idempotent)");
+ok((await db.query("select count(*)::int as n from public.posts where author_role = 'teacher' and author_name like '% %'")).rows[0].n === 0, "backfill leaves teacher names alone");
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

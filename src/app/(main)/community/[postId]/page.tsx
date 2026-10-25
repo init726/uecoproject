@@ -11,6 +11,7 @@ import { CONTENT_STATUS_LABEL, POST_KIND_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { Comment, Post } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ModerationForm } from "../../admin/community/moderation-form";
 import { acceptComment, deleteComment, deletePost, setPinned, toggleBookmark } from "../actions";
 import { CommentEdit } from "../comment-edit";
 import { CommentForm } from "../comment-form";
@@ -145,6 +146,15 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
         </div>
       </article>
 
+      {isAdmin && post.status !== "deleted" && (
+        <details className="school-panel px-4 py-3 sm:px-5">
+          <summary className="cursor-pointer text-sm font-semibold">관리자 처리 (숨김·삭제)</summary>
+          <div className="mt-3">
+            <ModerationForm postId={post.id} status={post.status} />
+          </div>
+        </details>
+      )}
+
       <section className="school-panel">
         <div className="school-panel-heading">
           <h3 className="school-panel-title">
@@ -213,6 +223,14 @@ export default async function PostPage(props: PageProps<"/community/[postId]">) 
                         <ReportForm commentId={comment.id} redirectTo={`/community/${post.id}`} />
                       )}
                     </div>
+                  )}
+                  {isAdmin && !mine && comment.status !== "deleted" && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs text-muted-foreground">관리자 처리</summary>
+                      <div className="mt-2 max-w-md">
+                        <ModerationForm commentId={comment.id} status={comment.status} />
+                      </div>
+                    </details>
                   )}
                 </li>
               );

@@ -18,8 +18,8 @@ export const ROLE_LABEL = {
 // ---- 커뮤니티 ----
 export const POST_KIND_LABEL = {
   notice: "학교 공지",
-  question: "질문",
-  free: "자유",
+  question: "궁금해요",
+  free: "이야기",
 } as const;
 
 export const CONTENT_STATUS_LABEL = {
