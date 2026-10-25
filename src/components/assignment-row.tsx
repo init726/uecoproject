@@ -24,7 +24,7 @@ export function AssignmentRow({ assignment: a, compact = false }: { assignment: 
       </div>
       {a.submitted ? (
         <Badge variant={a.is_late ? "destructive" : "default"}>
-          {a.is_late ? "지각 제출" : "제출 완료"}
+          {a.is_late ? "마감 후 제출" : "제출 완료"}
         </Badge>
       ) : (
         <span

@@ -102,4 +102,33 @@ await db.exec(readFileSync('supabase/update-school-workflows.sql','utf8'));
 await db.exec(readFileSync('supabase/update-school-workflows.sql','utf8'));
 test((await db.query('select count(*)::int n from public.submissions')).rows[0].n===2,'repeatable workflow migration preserves submission history');
 test((await db.query('select community_marker from public.notifications')).rows[0].community_marker==='keep-community','community notification structure and rows are preserved');
+// 과제 취소 · 참고 자료 (update-assignment-tools.sql): 기존 DB에 두 번 실행해도 안전해야 한다.
+await db.exec(readFileSync('supabase/update-assignment-tools.sql','utf8'));
+await db.exec(readFileSync('supabase/update-assignment-tools.sql','utf8'));
+const {rows:[a2]}=await as(teacher,"insert into public.assignments(class_id,title,type,due_at) values($1,'보고서','file',now()+interval '3 day') returning id",[klass.id]);
+const before=(await as(teacher,'select * from public.class_deadline_load($1,current_date,current_date+4)',[klass.id])).rows.reduce((n,r)=>n+r.assignment_count,0);
+// 참고 자료: 저장소에 올라간 파일만, 그 과제 폴더 경로로만 등록된다.
+await db.query("insert into storage.objects(bucket_id,name,metadata) values('assignment-files',$1,$2)",[`${a2.id}/1.pdf`,JSON.stringify({size:1234})]);
+await denied(students[0],"insert into public.assignment_files(assignment_id,file_path,file_name) values($1,$2,'안내.pdf')",[a2.id,`${a2.id}/1.pdf`],'student cannot attach reference files');
+await denied(teacher,"insert into public.assignment_files(assignment_id,file_path,file_name) values($1,$2,'없음.pdf')",[a2.id,`${a2.id}/missing.pdf`],'attachment must exist in storage');
+await denied(teacher,"insert into public.assignment_files(assignment_id,file_path,file_name) values($1,$2,'남의 폴더.pdf')",[a2.id,`${assignment.id}/1.pdf`],'attachment path must be under its assignment');
+const {rows:[att]}=await as(teacher,"insert into public.assignment_files(assignment_id,file_path,file_name,file_size) values($1,$2,'안내.pdf',1) returning file_size",[a2.id,`${a2.id}/1.pdf`]);
+test(Number(att.file_size)===1234,'attachment size comes from storage, not the client');
+test((await as(students[1],'select * from public.assignment_files')).rows.length===1,'class student sees reference files');
+test((await as(outsider,'select * from public.assignment_files')).rows.length===0,'outsider cannot see reference files');
+test((await as(students[1],"select * from storage.objects where bucket_id='assignment-files'")).rows.length===1,'class student can download the reference file');
+test((await as(outsider,"select * from storage.objects where bucket_id='assignment-files'")).rows.length===0,'outsider cannot download the reference file');
+// 과제 취소: 담당 교사만, 함수로만. 취소된 과제·자료는 숨겨지고 제출과 몰림 계산에서 빠진다.
+await denied(other,'select public.cancel_assignment($1)',[a2.id],'other teacher cannot cancel the assignment');
+await denied(students[0],'select public.cancel_assignment($1)',[a2.id],'student cannot cancel the assignment');
+await denied(teacher,'update public.assignments set deleted_at=now() where id=$1',[a2.id],'deleted_at cannot be set directly');
+await as(teacher,'select public.cancel_assignment($1)',[a2.id]);
+test((await as(students[0],'select * from public.assignments where id=$1',[a2.id])).rows.length===0,'canceled assignment is hidden from students');
+test((await as(teacher,'select * from public.assignments where id=$1',[a2.id])).rows.length===0,'canceled assignment is hidden from the teacher too');
+test((await as(students[1],'select * from public.assignment_files')).rows.length===0,'reference files of a canceled assignment are hidden');
+await denied(students[0],"insert into public.submissions(assignment_id,student_id,file_path,file_name) values($1,$2,'x/y.pdf','y.pdf')",[a2.id,students[0]],'cannot submit to a canceled assignment');
+await denied(teacher,'select public.cancel_assignment($1)',[a2.id],'cannot cancel twice');
+const after=(await as(teacher,'select * from public.class_deadline_load($1,current_date,current_date+4)',[klass.id])).rows.reduce((n,r)=>n+r.assignment_count,0);
+test(after===before-1,'deadline load ignores canceled assignments');
+test((await db.query('select count(*)::int n from public.submissions')).rows[0].n===2,'canceling keeps existing submissions');
 await db.close();console.log(`ALL ${passed} WORKFLOW CHECKS PASSED`);

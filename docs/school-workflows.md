@@ -3,6 +3,7 @@
 ## 기존 프로젝트에 적용
 
 1. Supabase SQL Editor에서 `supabase/update-school-workflows.sql` 전체를 한 번 실행한다. 기존 시간표·엑셀 등록 마이그레이션이 적용된 프로젝트용이다. 반복 실행해도 제출 기록과 응답을 보존한다. 새 프로젝트는 `supabase/schema.sql`만 실행한다.
+   그다음 `supabase/update-assignment-tools.sql`을 실행한다. 과제 취소(기록은 보존하고 화면에서 숨김), 참고 자료 첨부(비공개 버킷 `assignment-files`, 20MB), 취소된 과제를 뺀 과제 몰림 확인이 들어 있다. 이것도 반복 실행해도 안전하다.
 2. `.env.local`에 아래 설정을 추가한다. 모델명은 `ollama list`에 나오는 로컬 모델명이다. 현재 개발 기기에 설치된 모델은 `qwen3:4b`이다.
 
 ```env

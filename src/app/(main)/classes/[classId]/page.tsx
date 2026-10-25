@@ -85,7 +85,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
     ? (memberRows ?? []).sort((a, b) => (a.student?.student_no ?? "").localeCompare(b.student?.student_no ?? ""))
     : [];
 
-  // 과제별로 학생마다 가장 최근 제출의 지각 여부
+  // 과제별로 학생마다 가장 최근 제출이 마감 후였는지
   const latestByAssignment = new Map<string, Map<string, boolean>>();
   for (const a of assignments) {
     const latest = new Map<string, { version: number; late: boolean; canceled: boolean }>();
@@ -183,7 +183,7 @@ export default async function ClassPage(props: PageProps<"/classes/[classId]">) 
                       <Badge variant={overdue ? "destructive" : "secondary"}>미제출</Badge>
                     ) : (
                       <Badge variant={myLate ? "destructive" : "default"}>
-                        {myLate ? "지각 제출" : "제출 완료"}
+                        {myLate ? "마감 후 제출" : "제출 완료"}
                       </Badge>
                     )}
                   </CardContent>

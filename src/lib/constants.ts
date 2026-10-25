@@ -8,6 +8,9 @@ export const PERIODS = [1, 2, 3, 4, 5, 6, 7] as const;
 // 저장소 정책(schema.sql)과 같은 목록이어야 한다.
 export const ALLOWED_EXTENSIONS = ["pdf", "hwp", "hwpx", "docx", "jpg", "jpeg", "png", "zip"];
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// 교사가 과제에 붙이는 참고 자료 (저장소 정책 update-assignment-tools.sql 과 같은 목록)
+export const REFERENCE_EXTENSIONS = ["pdf", "hwp", "hwpx", "docx", "pptx", "xlsx", "jpg", "jpeg", "png", "zip"];
+export const MAX_REFERENCE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export const ROLE_LABEL = {
   student: "학생",

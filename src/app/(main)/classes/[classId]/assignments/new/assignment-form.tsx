@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DeadlineLoad } from "@/components/deadline-load";
+import { DueDateField } from "@/components/due-date-field";
 import { createAssignment, updateAssignment } from "./actions";
 
 const TYPES = [
-  { value: "file", label: "파일 제출", hint: "수행평가 보고서 등 (PDF, HWP, DOCX, 이미지, ZIP)" },
-  { value: "text", label: "글 작성", hint: "생기부 자료용 글 (글자 수 제한)" },
+  { value: "file", label: "파일 제출", hint: "보고서·발표 자료 등을 파일로 (PDF, HWP, DOCX, 이미지, ZIP)" },
+  { value: "text", label: "글 작성", hint: "학생이 화면에서 바로 글을 써서 제출 (수행평가·활동 기록 등)" },
 ] as const;
 
 // 고칠 때 넣는 원래 값. due_at 은 datetime-local 형식("2026-11-03T18:00", 한국 시간)
@@ -87,11 +88,10 @@ export function AssignmentForm({ classId, initial }: { classId: string; initial?
         </p>
       </div>
 
+      <DueDateField name="due_at" defaultValue={initial?.due_at} onChange={setDue} />
+      <DeadlineLoad classId={classId} day={due.slice(0,10)} />
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="due_at">마감 일시</Label>
-          <Input id="due_at" name="due_at" type="datetime-local" value={due} onChange={e=>setDue(e.target.value)} required />
-        </div>
         {type === "text" && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="max_chars">글자 수 제한</Label>
@@ -109,14 +109,14 @@ export function AssignmentForm({ classId, initial }: { classId: string; initial?
         )}
       </div>
 
-      <DeadlineLoad classId={classId} day={due.slice(0,10)} />
       {type === "text" && !initial && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="self_review" className="size-4" />자기평가서 과제 (기존 글 제출 내용을 바탕으로 AI 초안 지원)</label>}
       {initial?.self_review && <p className="text-sm text-muted-foreground">자기평가서 과제입니다. (바꿀 수 없어요)</p>}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="allow_late" defaultChecked={initial?.allow_late ?? true} className="size-4" />
-        마감 후에도 제출 받기 (지각으로 표시)
+        마감 후에도 제출 받기 (마감 후 제출로 따로 표시돼요)
       </label>
 
+      {!initial && <p className="text-xs text-muted-foreground">과제를 낸 뒤 과제 화면에서 참고 자료(PDF 등)를 올릴 수 있어요.</p>}
       <FormMessage state={state} />
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "저장 중..." : initial ? "고친 내용 저장" : "과제 내기"}

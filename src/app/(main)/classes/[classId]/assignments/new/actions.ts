@@ -26,7 +26,7 @@ function readAssignmentFields(formData: FormData, type: "file" | "text") {
   } as const;
 }
 
-// ASG-01: 과제 만들기. 수행평가(파일)와 생기부 글쓰기(글)를 type 하나로 구분한다.
+// ASG-01: 과제 만들기. 파일 제출과 글 작성(수행평가·활동 기록 등)을 type 하나로 구분한다.
 export async function createAssignment(
   classId: string,
   _prev: ActionState,
@@ -54,7 +54,7 @@ export async function createAssignment(
   redirect(`/assignments/${data.id}`);
 }
 
-// 과제 고치기: 제목·설명·평가 기준·마감·글자 수·지각 허용만 바꾼다.
+// 과제 고치기: 제목·설명·평가 기준·마감·글자 수·마감 후 제출 허용만 바꾼다.
 // 제출 방식(파일/글)과 자기평가서 여부는 이미 낸 제출물과 맞지 않게 되므로 바꾸지 않는다.
 // 담당 교사인지는 RLS("assignments: 담당 교사만 수정")가 확인한다. 아니면 0행이 바뀐다.
 export async function updateAssignment(
@@ -84,5 +84,6 @@ export async function deadlineLoad(classId:string,day:string):Promise<{rows?:imp
  const {requireRole}=await import("@/lib/auth");await requireRole("teacher");
  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return {error:"날짜를 선택해 주세요."};
  const client=await createClient();const {data,error}=await client.rpc("class_deadline_load",{p_class_id:classId,p_from:day,p_to:day});
- return error?{error:error.code==="P0001"?error.message:"과제 몰림을 확인하지 못했습니다. DB 업데이트를 확인해 주세요."}:{rows:data};
+ if(isMissingSchema(error,["class_deadline_load"])) return {error:"과제 몰림 확인은 DB 업데이트(update-school-workflows.sql → update-assignment-tools.sql) 뒤에 쓸 수 있어요."};
+ return error?{error:error.code==="P0001"?error.message:"과제 몰림을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요."}:{rows:data};
 }

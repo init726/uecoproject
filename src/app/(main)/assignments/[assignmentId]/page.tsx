@@ -2,13 +2,17 @@ import {withSchemaFallback,isMissingSchema} from "@/lib/schema-compat";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Paperclip } from "lucide-react";
+import { ConfirmButton } from "@/components/confirm-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProfile } from "@/lib/auth";
 import { countChars, formatDateTime, formatFileSize, isPast } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Assignment, Submission } from "@/lib/types";
+import { deleteAssignmentFile } from "./actions";
 import { FileSubmitForm } from "./file-submit-form";
+import { ReferenceUpload } from "./reference-upload";
 import { SubmissionControls, FeedbackForm } from "./submission-controls";
 import { TextSubmitForm } from "./text-submit-form";
 import { PageHeader } from "@/components/page-header";
@@ -54,10 +58,15 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
 
   // 피드백과 AI 초안 기록은 서로 상관없으므로 동시에 받는다.
   const empty = { data: [], error: null };
-  const [{ data: feedbackRows, error: feedbackError }, { data: aiLogs, error: aiError }] = await Promise.all([
+  const [{ data: feedbackRows, error: feedbackError }, { data: aiLogs, error: aiError }, { data: fileRows, error: filesError }] = await Promise.all([
     submissions.length ? supabase.from("submission_feedback").select("submission_id, body, updated_at").in("submission_id", submissions.map(s=>s.id)) : Promise.resolve(empty),
     purposeReady && assignment.purpose==="self_review" ? supabase.from("ai_draft_logs").select("student_id,created_at").eq("assignment_id",assignmentId) : Promise.resolve(empty),
+    supabase.from("assignment_files").select("id, file_name, file_size").eq("assignment_id", assignmentId).order("created_at"),
   ]);
+  // 참고 자료 표(update-assignment-tools.sql) 전이면 자료 칸만 숨긴다.
+  const filesReady = !isMissingSchema(filesError, ["assignment_files"]);
+  if (filesError && filesReady) throw new Error("참고 자료를 불러오지 못했습니다.");
+  const files = fileRows ?? [];
   const feedbackReady=!isMissingSchema(feedbackError,["submission_feedback"]);
   if (feedbackError && feedbackReady) throw new Error("피드백을 불러오지 못했습니다. DB 업데이트를 확인해 주세요.");
   const feedback = Object.fromEntries((feedbackRows ?? []).map(f=>[f.submission_id,f]));
@@ -85,7 +94,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
             마감 {formatDateTime(assignment.due_at)}
             {overdue && " (마감됨)"}
             {" · "}
-            {assignment.allow_late ? "마감 후 제출 가능(지각 표시)" : "마감 후 제출 불가"}
+            {assignment.allow_late ? "마감 후에도 제출 가능" : "마감 후 제출 불가"}
             {assignment.max_chars && ` · ${assignment.max_chars}자 이내`}
           </span>
         }
@@ -105,6 +114,35 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
           )}
           {assignment.rubric && <InfoCard title="평가 기준" text={assignment.rubric} />}
         </div>
+      )}
+
+      {filesReady && (isTeacher || files.length > 0) && (
+        <section className="school-panel">
+          <div className="school-panel-heading">
+            <h3 className="school-panel-title">
+              <Paperclip className="size-[18px] text-primary" aria-hidden="true" />
+              참고 자료
+            </h3>
+            {isTeacher && <span className="text-xs text-muted-foreground">학생은 내려받기만 할 수 있어요</span>}
+          </div>
+          <div className="flex flex-col gap-3 px-4 py-4 sm:px-5">
+            {files.length === 0 && <p className="text-sm text-muted-foreground">아직 올린 자료가 없어요. 과제 안내 PDF 등을 올려 보세요.</p>}
+            {files.map((f) => (
+              <div key={f.id} className="flex items-center gap-3">
+                <a href={`/assignment-files/${f.id}/download`} className="min-w-0 flex-1 truncate text-sm font-medium underline underline-offset-4">
+                  {f.file_name}
+                  {f.file_size ? ` (${formatFileSize(f.file_size)})` : ""}
+                </a>
+                {isTeacher && (
+                  <form action={deleteAssignmentFile.bind(null, assignmentId, f.id)}>
+                    <ConfirmButton variant="ghost" size="xs" confirm="이 자료를 지울까요?">삭제</ConfirmButton>
+                  </form>
+                )}
+              </div>
+            ))}
+            {isTeacher && <ReferenceUpload assignmentId={assignmentId} />}
+          </div>
+        </section>
       )}
 
       {isTeacher ? (
@@ -134,15 +172,12 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
           </Card>
 
           {cancelReady && submissions[0] && !submissions[0].canceled_at && !overdue && <SubmissionControls assignmentId={assignmentId} />}
-          {submissions.length > 0 && (
+          {submissions[0] && (
             <section className="flex flex-col gap-2">
-              <h3 className="font-semibold">내 제출 기록</h3>
-              <p className="text-xs text-muted-foreground">
-                제출 기록은 고치거나 지울 수 없어요. 제출 시각은 서버 시간으로 기록돼요.
-              </p>
-              {submissions.map((s) => (
-                <div key={s.id}><SubmissionItem submission={s} />{feedback[s.id] && <FeedbackBody feedback={feedback[s.id]} />}</div>
-              ))}
+              <h3 className="font-semibold">내 제출</h3>
+              <p className="text-xs text-muted-foreground">제출 시각은 서버 시간으로 기록돼요. 다시 내면 새 제출로 바뀌어요.</p>
+              <SubmissionItem submission={submissions[0]} />
+              {feedback[submissions[0].id] && <FeedbackBody feedback={feedback[submissions[0].id]} />}
             </section>
           )}
         </>
@@ -151,7 +186,7 @@ export default async function AssignmentPage(props: PageProps<"/assignments/[ass
   );
 }
 
-// ASG-05: 교사용 제출 현황 (제출 / 지각 / 미제출)
+// ASG-05: 교사용 제출 현황 (제출 / 마감 후 제출 / 미제출). 학생마다 가장 최근 제출만 보여 준다.
 type Feedback = { body: string; updated_at: string };
 function TeacherView({ members: memberRows, submissions, feedback, aiCounts, feedbackReady }: { feedbackReady:boolean; aiCounts:Record<string,number>; members: Member[]; submissions: Submission[]; feedback: Record<string, Feedback> }) {
   const members = [...memberRows].sort((a, b) =>
@@ -174,7 +209,7 @@ function TeacherView({ members: memberRows, submissions, feedback, aiCounts, fee
     <section className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-2 text-center">
         <Stat label="제출" value={submitted.length - late} />
-        <Stat label="지각" value={late} />
+        <Stat label="마감 후 제출" value={late} />
         <Stat label="미제출" value={missing} />
       </div>
 
@@ -197,8 +232,8 @@ function TeacherView({ members: memberRows, submissions, feedback, aiCounts, fee
                   {!s || s.canceled_at ? (
                     <Badge variant="secondary">미제출</Badge>
                   ) : (
-                    <Badge variant={s.is_late ? "destructive" : "default"}>
-                      {s.is_late ? "지각" : "제출"}
+                    <Badge variant={s.is_late ? "outline" : "default"}>
+                      {s.is_late ? "마감 후 제출" : "제출"}
                     </Badge>
                   )}
                 </span>
@@ -211,7 +246,6 @@ function TeacherView({ members: memberRows, submissions, feedback, aiCounts, fee
                   </p>
                   <SubmissionBody submission={s} />
                   {feedbackReady && <FeedbackForm submissionId={s.id} body={feedback[s.id]?.body ?? ""} />}
-                  <details><summary className="cursor-pointer text-sm text-muted-foreground">이전 제출 기록</summary><div className="mt-3 space-y-3">{submissions.filter(v=>v.student_id===m.student_id && v.id!==s.id).map(v=><div key={v.id}><SubmissionItem submission={v} />{feedback[v.id] && <FeedbackBody feedback={feedback[v.id]} />}{feedbackReady && <FeedbackForm submissionId={v.id} body={feedback[v.id]?.body ?? ""} />}</div>)}</div></details>
                 </>
               )}
             </CardContent>
@@ -227,10 +261,10 @@ function SubmissionItem({ submission: s }: { submission: Submission }) {
     <Card size="sm">
       <CardContent className="flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm">
-          <span className="font-medium">{s.version}번째 제출</span>
+          <span className="font-medium">{s.version > 1 ? `${s.version}번째 제출` : "제출"}</span>
           <span className="text-muted-foreground">{formatDateTime(s.submitted_at)}</span>
           {s.canceled_at && <Badge variant="secondary">취소됨 · {formatDateTime(s.canceled_at)}</Badge>}
-          {s.is_late && <Badge variant="destructive">지각</Badge>}
+          {s.is_late && <Badge variant="outline">마감 후 제출</Badge>}
         </div>
         <SubmissionBody submission={s} />
       </CardContent>
