@@ -1,6 +1,6 @@
 // 학교 이름과 서비스 이름 (한 학교 전용 서비스라 설정 없이 고정)
 export const SCHOOL_NAME = "신정고등학교";
-export const SERVICE_NAME = "Cue";
+export const SERVICE_NAME = "Chalk";
 
 export const DAYS = ["월", "화", "수", "목", "금"] as const;
 export const PERIODS = [1, 2, 3, 4, 5, 6, 7] as const;

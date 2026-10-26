@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SERVICE_NAME } from "@/lib/constants";
 
-// 로고: 굵고 둥근 필기체 "Cue". 글자색은 라이트=검정, 다크=밝은 회백색을 따라간다.
+// 로고: 굵고 둥근 필기체 "Chalk". 글자색은 라이트=검정, 다크=밝은 회백색을 따라간다.
 // (tone 은 예전 호출과 맞추려고 남겨 둔 값이고 지금은 쓰지 않는다)
 export function SchoolBrand({
   name = SERVICE_NAME,
