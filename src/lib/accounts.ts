@@ -1,5 +1,6 @@
 import "server-only";
 import { generatePassword } from "@/lib/password";
+import { isMissingSchema } from "@/lib/schema-compat";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Role } from "@/lib/types";
 import { toAuthEmail } from "@/lib/username";
@@ -23,6 +24,15 @@ export type IssueInput = {
 
 export type Credentials = { username: string; password: string };
 
+// 가입 트리거가 확인하는 발급 허가표(10분 유효)를 넣는다. 허가표 없는 가입(Supabase 공개 가입 API)은 DB가 거부한다.
+// update-security.sql 전 DB에는 표가 없으므로 그때는 그냥 진행한다.
+async function allowIssue(admin: ReturnType<typeof createAdminClient>, email: string) {
+  const { error } = await admin
+    .from("account_issue_tickets")
+    .upsert({ email: email.toLowerCase(), created_at: new Date().toISOString() });
+  return !error || isMissingSchema(error, ["account_issue_tickets"]);
+}
+
 function describeCreateError(code: string | undefined) {
   if (code === "email_exists" || code === "user_already_exists") return "이미 사용 중인 아이디예요.";
   return "계정을 만들지 못했어요.";
@@ -31,6 +41,7 @@ function describeCreateError(code: string | undefined) {
 export async function issueAccount(input: IssueInput): Promise<(Credentials & { userId: string }) | { error: string }> {
   const admin = createAdminClient();
   const password = generatePassword();
+  if (!(await allowIssue(admin, toAuthEmail(input.username)))) return { error: "계정을 만들지 못했어요." };
 
   // 가입 트리거는 student/teacher만 받으므로, 관리자는 teacher로 만든 뒤 바로 역할을 바꾼다.
   const { data, error } = await admin.auth.admin.createUser({
@@ -68,6 +79,7 @@ export async function createTeacherSignup(input: {
   password: string;
 }): Promise<{ error?: string }> {
   const admin = createAdminClient();
+  if (!(await allowIssue(admin, toAuthEmail(input.username)))) return { error: "계정을 만들지 못했어요." };
   const { error } = await admin.auth.admin.createUser({
     email: toAuthEmail(input.username),
     password: input.password,

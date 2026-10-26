@@ -193,7 +193,7 @@ grant execute on function public.class_deadline_load(uuid, date, date) to authen
 
 commit;
 
--- 기존 DB: submission_log_self_review.sql 적용 후 이 파일 실행. 신규 DB: schema.sql 사용.
+-- (위 블록에 이어서 실행된다. 신규 DB는 schema.sql 사용)
 begin;
 
 create table if not exists public.submission_feedback (

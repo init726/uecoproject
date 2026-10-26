@@ -202,6 +202,19 @@ $$;
 -- 3. 트리거
 -- ---------------------------------------------------------------------
 
+-- 계정 발급 허가표. 학교 서버가 관리자 키(service_role)로 계정을 만들기 직전에 이메일을 넣어 두고,
+-- 가입 트리거가 확인한 뒤 지운다. 허가표가 없는 가입(Supabase 공개 가입 API 등)은 거부된다.
+-- 로그인한 사용자·비로그인 사용자는 이 표를 전혀 읽거나 쓸 수 없다.
+create table if not exists public.account_issue_tickets (
+  email text primary key,
+  created_at timestamptz not null default now()
+);
+alter table public.account_issue_tickets enable row level security;
+revoke all on public.account_issue_tickets from anon, authenticated;
+do $$ begin if exists (select 1 from pg_roles where rolname = 'service_role') then
+  grant all on public.account_issue_tickets to service_role;
+end if; end $$;
+
 -- 회원가입 시 profiles 자동 생성. 가입 화면에서 보낸 role은 student/teacher만 허용한다.
 -- (누가 role=admin을 보내도 student가 된다. 관리자는 SQL로만 지정한다.)
 create function public.handle_new_user()
@@ -212,6 +225,13 @@ declare
   v_role public.user_role :=
     case when new.raw_user_meta_data ->> 'role' = 'teacher' then 'teacher' else 'student' end;
 begin
+  -- 학교 서버가 넣어 둔 발급 허가표(10분 유효)가 있어야 계정이 된다. 쓴 허가표는 지운다.
+  delete from public.account_issue_tickets
+  where lower(email) = lower(new.email) and created_at > now() - interval '10 minutes';
+  if not found then
+    raise exception '학교에서 발급한 계정만 만들 수 있습니다.';
+  end if;
+
   if coalesce(new.raw_user_meta_data ->> 'privacy_agreed', '') <> 'true' then
     raise exception '개인정보 수집에 동의해야 가입할 수 있습니다.';
   end if;
@@ -744,7 +764,7 @@ grant execute on function public.import_school_timetable(text,jsonb,jsonb) to au
 commit;
 
 -- =====================================================================
--- 20261025_submission_log_self_review.sql (제출 취소 기록 · 과제 몰림 확인 · 자기평가서 AI 초안)
+-- 제출 취소 기록 블록 (제출 취소 기록 · 과제 몰림 확인 · 자기평가서 AI 초안)
 -- =====================================================================
 
 -- 제출 취소 기록 · 과제 몰림 확인 · 자기평가서 AI 초안
@@ -942,7 +962,7 @@ grant execute on function public.class_deadline_load(uuid, date, date) to authen
 
 commit;
 
--- 기존 DB: submission_log_self_review.sql 적용 후 이 파일 실행. 신규 DB: schema.sql 사용.
+-- (위 블록에 이어서 실행된다. 신규 DB는 schema.sql 사용)
 begin;
 
 create table if not exists public.submission_feedback (

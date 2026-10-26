@@ -462,9 +462,13 @@ revoke insert, update, delete on public.reports from authenticated;
 revoke insert, update, delete on public.moderation_logs from authenticated;
 
 -- 게시 중인 글은 로그인한 모두에게. 검토 중인 글은 관리자와 작성자 본인만. 삭제됨은 관리자만.
+-- 승인 전 교사·이용 정지 계정은 글을 읽을 수도 없다. (학생 실명·학번이 보이므로)
 create policy "posts: 게시 중이거나 관리자·작성자만 조회" on public.posts
   for select to authenticated
-  using (status = 'published' or public.is_admin() or (author_id = auth.uid() and status = 'review'));
+  using (
+    public.is_admin()
+    or (public.can_use_community() and (status = 'published' or (author_id = auth.uid() and status = 'review')))
+  );
 create policy "posts: 본인 명의로만 작성" on public.posts
   for insert to authenticated with check (author_id = auth.uid());
 create policy "posts: 작성자만 수정" on public.posts
@@ -477,7 +481,8 @@ create policy "comments: 게시 중인 글의 게시 중 댓글만 조회, 관�
   using (
     public.is_admin()
     or (
-      exists (select 1 from public.posts p where p.id = post_id and p.status = 'published')
+      public.can_use_community()
+      and exists (select 1 from public.posts p where p.id = post_id and p.status = 'published')
       and (status = 'published' or (author_id = auth.uid() and status = 'review'))
     )
   );

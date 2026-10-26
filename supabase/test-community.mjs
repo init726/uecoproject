@@ -69,7 +69,7 @@ async function expectError(promise, msg, match) {
 }
 async function signup(email, meta) {
   const r = await db.query(
-    "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
+    "with t as (insert into public.account_issue_tickets(email) values(lower($1)) on conflict do nothing) insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
     [email, JSON.stringify(meta)],
   );
   return r.rows[0].id;
@@ -240,7 +240,10 @@ ok((await insertPost(S6, "free", "정지 해제", "x")).rows.length === 1, "unsu
 // 정지 전에 쓴 글을 정지 중에 고칠 수도 없다
 const p6 = (await insertPost(S6, "free", "고칠 글", "x")).rows[0];
 await q(A, "select public.set_user_suspended($1, true)", [S6]);
-await expectError(q(S6, "update public.posts set title = '정지 중 수정' where id = $1", [p6.id]), "suspended user cannot edit", "정지");
+// 정지 계정은 글을 읽을 수도 없으므로 수정 대상이 0행이 된다. (오류 없이 막힘)
+await q(S6, "update public.posts set title = '정지 중 수정' where id = $1", [p6.id]).catch(() => null);
+ok((await db.query("select title from public.posts where id = $1", [p6.id])).rows[0].title === "고칠 글", "suspended user cannot edit");
+ok((await q(S6, "select * from public.posts")).rows.length === 0, "suspended user cannot read community posts");
 ok((await q(S6, "update public.profiles set suspended = false where id = $1", [S6])).affectedRows === 0, "user cannot lift own suspension");
 
 // --- 계정 삭제 시 정리 ---
@@ -634,6 +637,12 @@ await db.query("update public.posts set status = 'review' where id = $1", [readP
 await expectError(q(S6, "insert into public.post_reads (post_id) values ($1)", [readPost.id]), "cannot record a read on a hidden post", "row-level security");
 await db.exec(readFileSync("supabase/community-v6.sql", "utf8"));
 ok(true, "community-v6.sql can be re-run");
+
+// --- 보안 업데이트: 승인 전 교사는 커뮤니티를 읽을 수 없다 ---
+ok((await q(T2, "select * from public.posts")).rows.length === 0, "unapproved teacher cannot read posts");
+ok((await q(T2, "select * from public.comments")).rows.length === 0, "unapproved teacher cannot read comments");
+ok((await q(S1, "select * from public.posts")).rows.length > 0, "students still read posts");
+ok((await q(T, "select * from public.comments")).rows.length > 0, "approved teacher still reads comments");
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

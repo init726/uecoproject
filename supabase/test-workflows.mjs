@@ -9,7 +9,7 @@ await db.exec(readFileSync('supabase/schema.sql','utf8'));
 const test=(condition,label)=>{assert.ok(condition,label);console.log('PASS',label);passed++;};
 async function as(id,sql,args=[]){await db.query('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id??'']);await db.query(id?'set role authenticated':'set role anon');try{return await db.query(sql,args);}finally{await db.query('reset role');}}
 async function denied(id,sql,args,label){await assert.rejects(()=>as(id,sql,args));test(true,label);}
-async function user(role,name){const {rows}=await db.query("insert into auth.users(email,raw_user_meta_data) values($1,$2) returning id",[`${name}@id.invalid`,JSON.stringify({name,role,privacy_agreed:'true',student_no:role==='student'?name:null})]);return rows[0].id;}
+async function user(role,name){const {rows}=await db.query("with t as (insert into public.account_issue_tickets(email) values(lower($1)) on conflict do nothing) insert into auth.users(email,raw_user_meta_data) values($1,$2) returning id",[`${name}@id.invalid`,JSON.stringify({name,role,privacy_agreed:'true',student_no:role==='student'?name:null})]);return rows[0].id;}
 const teacher=await user('teacher','teacher'),other=await user('teacher','other'),admin=await user('student','admin');
 await db.query("update public.profiles set approved=true where role='teacher'");await db.query("update public.profiles set role='admin' where id=$1",[admin]);
 const students=await Promise.all([user('student','10001'),user('student','10002'),user('student','10003')]);

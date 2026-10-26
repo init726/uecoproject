@@ -52,6 +52,13 @@ const password = values.password ?? [chunk(), chunk(), chunk()].join("-");
 
 const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
 
+// 가입 트리거가 확인하는 발급 허가표. (update-security.sql 전 DB에는 표가 없으므로 그 오류는 무시한다)
+const ticket = await admin.from("account_issue_tickets").upsert({ email: `${username}@id.invalid`, created_at: new Date().toISOString() });
+if (ticket.error && !/account_issue_tickets/.test(ticket.error.message)) {
+  console.error("발급 허가표를 넣지 못했어요:", ticket.error.message);
+  process.exit(1);
+}
+
 // 아이디는 내부적으로 "아이디@id.invalid" 이메일로 저장한다. (src/lib/username.ts와 같은 규칙)
 const { data, error } = await admin.auth.admin.createUser({
   email: `${username}@id.invalid`,

@@ -17,11 +17,13 @@ test("full workbook imports 132 accounts' profiles, 42 classes and 900 enrollmen
     await db.query("insert into public.semesters(id,academic_year,term) values('2026-2학기',2026,2) on conflict do nothing");
     const ids=new Map<string,string>();
     for(const person of [...plan.teachers.map(p=>({...p,role:"teacher",studentNo:""})),...plan.students.map(p=>({...p,role:"student"}))]) {
+      await db.query("insert into public.account_issue_tickets(email) values($1)",[person.username+"@id.invalid"]);
       const row=(await db.query<{id:string}>("insert into auth.users(email,raw_user_meta_data) values($1,$2) returning id",[
         person.username+"@id.invalid",JSON.stringify({name:person.name,role:person.role,student_no:person.studentNo,privacy_agreed:"true"}),
       ])).rows[0];
       ids.set(person.username,row.id);
     }
+    await db.query("insert into public.account_issue_tickets(email) values('admin@test.invalid')");
     const admin=(await db.query<{id:string}>("insert into auth.users(email,raw_user_meta_data) values('admin@test.invalid','{\"name\":\"테스트관리자\",\"privacy_agreed\":\"true\"}') returning id")).rows[0].id;
     await db.query("update public.profiles set approved=true where role='teacher'");
     await db.query("update public.profiles set role='admin',approved=true where id=$1",[admin]);

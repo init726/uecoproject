@@ -41,7 +41,7 @@ async function expectError(promise, msg) {
 }
 async function signup(email, meta) {
   const r = await db.query(
-    "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
+    "with t as (insert into public.account_issue_tickets(email) values(lower($1)) on conflict do nothing) insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
     [email, JSON.stringify(meta)],
   );
   return r.rows[0].id;
@@ -282,6 +282,7 @@ await expectError(as(null, () => db.query("select * from public.semesters")), "a
 const legacyDb = new PGlite();
 await legacyDb.exec(stub);
 await legacyDb.exec(readFileSync(schemaPath, "utf8").split("-- 기존 프로젝트: SQL Editor")[0]);
+await legacyDb.query("insert into public.account_issue_tickets(email) values('legacy@school.kr')");
 const legacyTeacher = (await legacyDb.query("insert into auth.users(email, raw_user_meta_data) values ('legacy@school.kr', '{\"name\":\"기존교사\",\"role\":\"teacher\",\"privacy_agreed\":\"true\"}') returning id")).rows[0].id;
 await legacyDb.query("insert into public.classes(teacher_id,name,semester) values ($1,'기존 과목','2026년 2학기')", [legacyTeacher]);
 await legacyDb.query("insert into public.classes(teacher_id,name,semester) values ($1,'특별 과목','겨울 특별학기')", [legacyTeacher]);
@@ -328,6 +329,17 @@ const manual=(await db.query("insert into public.classes(teacher_id,name,semeste
 await db.query("insert into public.class_slots(class_id,day,period) values($1,4,7)",[manual]);
 const adopted=await importTimetable(A,[{...importClasses[0],name:"기존 수동 수업",room:"별관 204",slots:[{day:4,period:7}]}],[{student_id:S2,class_name:"기존 수동 수업"}]);
 ok(adopted.classes_reused===1 && adopted.classes_created===0,"matching manually created class is adopted without duplication");
+
+// --- 보안 업데이트: 학교 서버가 넣은 발급 허가표가 있어야 계정이 된다 ---
+const meta = JSON.stringify({ name: "외부인", role: "student", student_no: "29999", privacy_agreed: "true" });
+await expectError(db.query("insert into auth.users (email, raw_user_meta_data) values ('outsider@gmail.com', $1)", [meta]), "public signup without ticket is rejected");
+await db.query("insert into public.account_issue_tickets(email, created_at) values ('late@school.kr', now() - interval '11 minutes')");
+await expectError(db.query("insert into auth.users (email, raw_user_meta_data) values ('late@school.kr', $1)", [meta]), "expired ticket is rejected");
+await db.query("insert into public.account_issue_tickets(email) values ('Once@School.kr')");
+await db.query("insert into auth.users (email, raw_user_meta_data) values ('once@school.kr', $1)", [meta]);
+ok((await db.query("select * from public.account_issue_tickets where email = 'once@school.kr'")).rows.length === 0, "ticket is consumed when the account is created");
+await expectError(as(S1, () => db.query("select * from public.account_issue_tickets")), "users cannot read issue tickets");
+await expectError(as(null, () => db.query("insert into public.account_issue_tickets(email) values ('x@y.z')")), "anon cannot create issue tickets");
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
