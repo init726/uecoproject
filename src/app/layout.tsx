@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_KR } from "next/font/google";
+import { Cabin_Sketch, Noto_Sans_KR } from "next/font/google";
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { SCHOOL_NAME, SERVICE_NAME } from "@/lib/constants";
@@ -12,6 +12,14 @@ const notoKr = Noto_Sans_KR({
   display: "swap",
   variable: "--font-noto-kr",
   preload: false,
+});
+
+// 로고(Chalk) 전용: 분필로 쓴 듯한 거친 글꼴. 로고 한 단어에만 쓰므로 굵은 700 하나만 받는다.
+const chalkFont = Cabin_Sketch({
+  weight: "700",
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-chalk",
 });
 
 export const metadata: Metadata = {
@@ -52,7 +60,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: 브라우저 확장 프로그램이 <html>·<body>에 속성을 붙여도 경고하지 않는다.
     // (이 두 태그의 속성에만 적용되고, 안쪽 화면의 오류는 그대로 잡힌다)
-    <html lang="ko" className={cn("h-full antialiased", notoKr.variable, theme === "dark" && "dark")} suppressHydrationWarning>
+    <html lang="ko" className={cn("h-full antialiased", notoKr.variable, chalkFont.variable, theme === "dark" && "dark")} suppressHydrationWarning>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         {process.env.NODE_ENV === "development" && (
           <Script id="strip-extension-attributes" strategy="beforeInteractive">

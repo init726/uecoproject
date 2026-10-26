@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 브라우저 탭 아이콘: 검은 칠판에 분필로 그린 C와 하늘색 밑줄 (로고와 같은 색) -->
+  <rect width="64" height="64" rx="14" fill="#0b0f14"/>
+  <path d="M42 20.5c-2.8-3-6.4-4.5-10.6-4.5-8.4 0-14.4 6.6-14.4 15s6 15 14.4 15c4.3 0 7.9-1.6 10.7-4.7" fill="none" stroke="#f5f5f1" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="58 2 30 1.5"/>
+  <path d="M15 53c9-2.2 19-1 34-2.4" fill="none" stroke="#7db4ff" stroke-width="4" stroke-linecap="round"/>
+</svg>
